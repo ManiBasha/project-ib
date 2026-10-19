@@ -42,7 +42,7 @@ window.BBFeatures.push(function (bb) {
     const coast = bb.isWater(x + 90, z) || bb.isWater(x - 90, z) || bb.isWater(x, z + 90) || bb.isWater(x, z - 90);
     if (st === 'KA') return { n: 24, mix: [['broad', 4], ['tall', 2], ['coconut', coast ? 5 : 1], ['bush', 1]] };
     return { n: 16, mix: [['broad', 4], ['tall', 1], ['coconut', coast ? 4 : 0], ['bush', 2]] }; }
-  const CELL = 200, RAD = 3; const meshes = {}; const MAXI = 2600;
+  const CELL = 200, RAD = bb.GFX && bb.GFX.lvl === 'saver' ? 2 : 3; const meshes = {}; const MAXI = Math.round(2600 * (bb.GFX ? bb.GFX.plants : 1));
   for (const [k, D] of Object.entries(KINDS)) { const tm = new T.MeshLambertMaterial({ color: D.tc }), lm = new T.MeshLambertMaterial({ color: D.lc, side: D.ds ? T.DoubleSide : T.FrontSide });
     const a = new T.InstancedMesh(D.trunk, tm, MAXI), b = new T.InstancedMesh(D.leaf, lm, MAXI); a.count = b.count = 0; a.frustumCulled = b.frustumCulled = false; a.castShadow = b.castShadow = false; bb.scene.add(a); bb.scene.add(b); meshes[k] = { a, b }; }
   const cache = new Map();
