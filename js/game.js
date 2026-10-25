@@ -3,8 +3,10 @@
 const $=s=>document.querySelector(s),$$=s=>document.querySelectorAll(s);
 if(!window.THREE){document.body.insertAdjacentHTML('beforeend','<div id="err">The 3D engine could not load. Check your connection and reload.</div>');return;}
 const W=window.WORLD,LM=window.LANDMARKS;
+// Beta v2.00.00: the map reaches north of the old top edge (Delhi, Punjab, the Himalaya), so z can be negative down to W.Z0
+const Z0=W.Z0||0;
 try{await Promise.race([document.fonts.load('800 48px "Baloo 2"'),new Promise(r=>setTimeout(r,1500))]);}catch(e){}
-const VERSION='Beta v1.01.29';
+const VERSION='Beta v2.00.00';
 
 /* ================= storage + config ================= */
 const store={get(k){try{return JSON.parse(localStorage.getItem(k));}catch(e){return null;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}};
@@ -36,7 +38,7 @@ const bayTime=()=>{const h=Math.floor(clockH),m=Math.floor((clockH-h)*60);return
 /* ================= renderer ================= */
 let renderer;
 const isTouch=matchMedia('(hover: none)').matches;
-/* Beta v1.01.29: graphics levels, so phones stay cool. Phones start on "Battery saver": 30 frames a second, a sharp but
+/* Beta v1.01.30: graphics levels, so phones stay cool. Phones start on "Battery saver": 30 frames a second, a sharp but
    lighter resolution, a little less traffic and a shorter view; menus and sheets draw at 12 frames a second. The game
    also lowers the resolution by itself if the phone can't keep up. Settings → Graphics changes it. */
 const GFX=(()=>{let s=null;try{s=localStorage.getItem('ib.gfx');}catch(e){}const lvl=s==='high'||s==='balanced'||s==='saver'?s:isTouch?'saver':'high';
@@ -93,7 +95,13 @@ const STYLES={metro:{cols:['#efe3c8','#f2b8a2','#bfe0cf','#a9cfe8','#e8c070','#f
   white:{cols:['#f4f1ea','#efe8da','#e9e2d0','#f2d7a7'],h:[6,16],old:true,lots:3,dome:.15},town:{cols:['#f2b8a2','#bfe0cf','#a9cfe8','#e8c070','#f4f1ea','#cfc6dc','#f6d7a7'],h:[5,14],old:true,lots:3},
   hill:{cols:['#f1e2c2','#e8d6b0','#d9c7a8'],h:[4,7],old:true,lots:2,cottage:true},
   goa:{cols:['#f2d16b','#7fb7d9','#e98b7f','#f4f1ea','#9fd3a5','#d9a0c8','#f2b8a2'],h:[5,9],old:true,lots:3,cottage:true},
-  kerala:{cols:['#f4f1ea','#efe8da','#f2d7a7','#cfe3c8','#e9c9a0','#d7e6ef'],h:[5,11],old:true,lots:3,cottage:true}};
+  kerala:{cols:['#f4f1ea','#efe8da','#f2d7a7','#cfe3c8','#e9c9a0','#d7e6ef'],h:[5,11],old:true,lots:3,cottage:true},
+  // Beta v2.00.00: the north and the east
+  pahadi:{cols:['#d9c3a0','#c9b08a','#e6d2b0','#b99c78','#efe3c8'],h:[5,10],old:true,lots:2,cottage:true},
+  ladakh:{cols:['#f3efe6','#efe7d8','#e8dcc6','#f6f2ea'],h:[4,8],old:true,lots:3},
+  kashmir:{cols:['#c9a27a','#b88d66','#d8bb93','#a87d58','#e0cfb0'],h:[6,12],old:true,lots:2,cottage:true},
+  mughal:{cols:['#c9734f','#d98a62','#efe3c8','#e3b48a','#f2d7a7'],h:[6,16],old:true,lots:3,chhatri:.18,dome:.08},
+  awadh:{cols:['#efe0c0','#e8cfa0','#d9b98a','#f2e6cf','#e6c79a'],h:[6,15],old:true,lots:3,dome:.12}};
 
 /* ================= static batching in chunks ================= */
 const CH=400;const chunks=new Map();const farGroups=[];let lmCollect=null;
@@ -104,27 +112,69 @@ function merge(geoms){let vc=0,ic=0;for(const g of geoms){vc+=g.attributes.posit
   const pos=new Float32Array(vc*3),nor=new Float32Array(vc*3),uv=new Float32Array(vc*2),idx=new Uint32Array(ic);let vo=0,io=0;
   for(const g of geoms){const p=g.attributes.position,n=g.attributes.normal,u=g.attributes.uv;pos.set(p.array,vo*3);if(n)nor.set(n.array,vo*3);if(u)uv.set(u.array,vo*2);if(g.index){const a=g.index.array;for(let i=0;i<a.length;i++)idx[io++]=a[i]+vo;}else{for(let i=0;i<p.count;i++)idx[io++]=vo+i;}vo+=p.count;g.dispose();}
   const o=new THREE.BufferGeometry();o.setAttribute('position',new THREE.BufferAttribute(pos,3));o.setAttribute('normal',new THREE.BufferAttribute(nor,3));o.setAttribute('uv',new THREE.BufferAttribute(uv,2));o.setIndex(new THREE.BufferAttribute(idx,1));o.computeBoundingSphere();return o;}
-function flushStatic(){for(const c of chunks.values()){for(const p of c.pend.values()){if(!p.geoms.length)continue;const m=new THREE.Mesh(merge(p.geoms),p.mat);m.castShadow=p.cast;m.receiveShadow=p.receive;m.matrixAutoUpdate=false;m.updateMatrix();c.group.add(m);}c.pend.clear();}}
+// Beta v1.01.30: the merged city and landscape geometry never changes, so once it is on the graphics card the copy in
+// memory is let go (about a third less memory, which matters on phones). Its bounds are worked out first.
+function lean(g){g.computeBoundingBox();if(!g.boundingSphere)g.computeBoundingSphere();const free=function(){this.array=null;};for(const k in g.attributes)g.attributes[k].onUpload(free);if(g.index)g.index.onUpload(free);return g;}
+// Beta v2.00.00: the merged geometry is stored small: positions as 16-bit numbers inside a box per chunk (the mesh is
+// moved and scaled back), normals as 8-bit, no texture coordinates where the material has no texture, and 16-bit
+// indices where they fit. About half the memory of the city and landscape meshes, on the phone and on the graphics card.
+function packFrame(list){let x0=1e9,y0=1e9,z0=1e9,x1=-1e9,y1=-1e9,z1=-1e9;for(const g of list){if(!g.boundingBox)g.computeBoundingBox();const b=g.boundingBox;if(b.min.x<x0)x0=b.min.x;if(b.min.y<y0)y0=b.min.y;if(b.min.z<z0)z0=b.min.z;if(b.max.x>x1)x1=b.max.x;if(b.max.y>y1)y1=b.max.y;if(b.max.z>z1)z1=b.max.z;}
+  // heights use one fixed 5 mm step everywhere (so flat things at the same height match exactly in every chunk: no flicker)
+  const f={cx:(x0+x1)/2,cy:0,cz:(z0+z1)/2,sx:Math.max(4,(x1-x0)/2*1.001),sy:32767/200,sz:Math.max(4,(z1-z0)/2*1.001)};f.ok=f.sx<1600&&f.sz<1600&&y0>-160&&y1<160;return f;}
+const hasTex=m=>!!(m&&(m.map||m.alphaMap||m.emissiveMap||m.lightMap||m.bumpMap||m.normalMap||m.specularMap||m.aoMap));
+function packMesh(geoms,mat,f){const g=merge(geoms);if(!f.ok)return new THREE.Mesh(lean(g),mat);
+  const pa=g.attributes.position.array,na=g.attributes.normal.array,n=pa.length/3;const q=new Int16Array(n*3),qn=new Int8Array(n*3);const ix=32767/f.sx,iy=32767/f.sy,iz=32767/f.sz;
+  for(let i=0,k=0;i<n;i++,k+=3){q[k]=Math.round((pa[k]-f.cx)*ix);q[k+1]=Math.round((pa[k+1]-f.cy)*iy);q[k+2]=Math.round((pa[k+2]-f.cz)*iz);
+    // the normal in the scaled box: multiply by the scale, the shader divides it out again
+    let a=na[k]*f.sx,b=na[k+1]*f.sy,c=na[k+2]*f.sz;const L=Math.hypot(a,b,c)||1;qn[k]=Math.round(a/L*127);qn[k+1]=Math.round(b/L*127);qn[k+2]=Math.round(c/L*127);}
+  const o=new THREE.BufferGeometry();o.setAttribute('position',new THREE.BufferAttribute(q,3,true));o.setAttribute('normal',new THREE.BufferAttribute(qn,3,true));if(hasTex(mat))o.setAttribute('uv',g.attributes.uv);
+  const ia=g.index.array;o.setIndex(new THREE.BufferAttribute(n<65536?Uint16Array.from(ia):ia,1));g.dispose();
+  o.boundingBox=new THREE.Box3(new THREE.Vector3(-1,-1,-1),new THREE.Vector3(1,1,1));o.boundingSphere=new THREE.Sphere(new THREE.Vector3(),1.7321);
+  const free=function(){this.array=null;};for(const k in o.attributes)o.attributes[k].onUpload(free);o.index.onUpload(free);
+  const m=new THREE.Mesh(o,mat);m.position.set(f.cx,f.cy,f.cz);m.scale.set(f.sx,f.sy,f.sz);return m;}
+function flushStatic(){for(const c of chunks.values()){const all=[];for(const p of c.pend.values())all.push(...p.geoms);const f=all.length?packFrame(all):null;for(const p of c.pend.values()){if(!p.geoms.length)continue;const m=packMesh(p.geoms,p.mat,f);m.castShadow=p.cast;m.receiveShadow=p.receive;m.matrixAutoUpdate=false;m.updateMatrix();c.group.add(m);}c.pend.clear();}}
 function flushFar(list,x,z){const by=new Map();for(const [g,mat,cast,recv] of list){const k=mat.uuid+(cast?1:0);let p=by.get(k);if(!p){p={mat,geoms:[],cast,recv};by.set(k,p);}p.geoms.push(g);}
-  const grp=new THREE.Group();for(const p of by.values()){const m=new THREE.Mesh(merge(p.geoms),p.mat);m.castShadow=p.cast;m.receiveShadow=p.recv;m.matrixAutoUpdate=false;m.updateMatrix();grp.add(m);}scene.add(grp);farGroups.push({group:grp,x,z});}
+  const grp=new THREE.Group();const f=packFrame(list.map(a=>a[0]));for(const p of by.values()){const m=packMesh(p.geoms,p.mat,f);m.castShadow=p.cast;m.receiveShadow=p.recv;m.matrixAutoUpdate=false;m.updateMatrix();grp.add(m);}scene.add(grp);farGroups.push({group:grp,x,z});}
 function updChunks(px,pz){const r=scene.fog.far+120,rf=Math.min(2600,scene.fog.far*2.6+300);for(const c of chunks.values()){c.group.visible=Math.abs(c.cx-px)<r+CH/2&&Math.abs(c.cz-pz)<r+CH/2;}for(const f of farGroups){f.group.visible=Math.hypot(f.x-px,f.z-pz)<rf;}}
-function box(w,h,d,x,y,z,mat,cast,recv){const g=new THREE.BoxGeometry(w,h,d);g.translate(x,y,z);addStatic(g,mat,cast!==false,recv!==false);return g;}
-function boxRot(w,h,d,x,y,z,ry,mat,cast,recv){const g=new THREE.BoxGeometry(w,h,d);g.rotateY(ry);g.translate(x,y,z);addStatic(g,mat,cast!==false,recv!==false);return g;}
+function box(w,h,d,x,y,z,mat,cast,recv){const g=BoxG(w,h,d);g.translate(x,y,z);addStatic(g,mat,cast!==false,recv!==false);return g;}
+function boxRot(w,h,d,x,y,z,ry,mat,cast,recv){const g=BoxG(w,h,d);g.rotateY(ry);g.translate(x,y,z);addStatic(g,mat,cast!==false,recv!==false);return g;}
 
+
+/* Beta v2.00.00: the static world is built from copies of a few template shapes (a box, a tree trunk and crown):
+   copying typed arrays is much quicker than building each shape point by point, and the map is twice the size now */
+const _UB=new THREE.BoxGeometry(1,1,1),_UBP=_UB.attributes.position.array,_UBN=_UB.attributes.normal.array,_UBU=_UB.attributes.uv.array,_UBI=_UB.index.array;
+function BoxG(w,h,d,a,b,c){if(a||b||c)return new THREE.BoxGeometry(w,h,d,a,b,c);const p=new Float32Array(72);for(let i=0;i<72;i+=3){p[i]=_UBP[i]*w;p[i+1]=_UBP[i+1]*h;p[i+2]=_UBP[i+2]*d;}
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(p,3));g.setAttribute('normal',new THREE.BufferAttribute(_UBN.slice(),3));g.setAttribute('uv',new THREE.BufferAttribute(_UBU.slice(),2));g.setIndex(new THREE.BufferAttribute(_UBI.slice(),1));g.parameters={width:w,height:h,depth:d};return g;}
+function tplCopy(t,sx,sy,sz){const P=t.attributes.position.array,n=P.length,p=new Float32Array(n);for(let i=0;i<n;i+=3){p[i]=P[i]*sx;p[i+1]=P[i+1]*sy;p[i+2]=P[i+2]*sz;}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(p,3));
+  g.setAttribute('normal',new THREE.BufferAttribute(t.attributes.normal.array.slice(),3));if(t.attributes.uv)g.setAttribute('uv',new THREE.BufferAttribute(t.attributes.uv.array.slice(),2));if(t.index)g.setIndex(new THREE.BufferAttribute(t.index.array.slice(),1));return g;}
+const _TRK=new THREE.CylinderGeometry(.25,.35,3,5),_CRN=new THREE.IcosahedronGeometry(2.4,0);
 /* ================= land, water, roads ================= */
 function pip(x,z,p){let c=false;for(let i=0,j=p.length-1;i<p.length;j=i++){const xi=p[i][0],zi=p[i][1],xj=p[j][0],zj=p[j][1];if(((zi>z)!==(zj>z))&&(x<(xj-xi)*(z-zi)/(zj-zi)+xi))c=!c;}return c;}
-const LG=20,LGW=Math.ceil(W.W/LG)+1,LGH=Math.ceil(W.H/LG)+1;const landGrid=new Uint8Array(LGW*LGH);
-for(let j=0;j<LGH;j++)for(let i=0;i<LGW;i++){const x=i*LG,z=j*LG;let l=pip(x,z,W.land)?1:0;landGrid[j*LGW+i]=l;}
-for(const is of W.islands)for(let j=Math.floor((is.z-is.r)/LG);j<=Math.ceil((is.z+is.r)/LG);j++)for(let i=Math.floor((is.x-is.r)/LG);i<=Math.ceil((is.x+is.r)/LG);i++){if(Math.hypot(i*LG-is.x,j*LG-is.z)<=is.r&&i>=0&&j>=0&&i<LGW&&j<LGH)landGrid[j*LGW+i]=2;}
-function isLand(x,z){if(x<0||z<0||x>W.W||z>W.H)return false;const i=Math.round(x/LG),j=Math.round(z/LG);return landGrid[j*LGW+i]>0;}
+const LG=20,LGW=Math.ceil(W.W/LG)+1,LGH=Math.ceil((W.H-Z0)/LG)+1;const landGrid=new Uint8Array(LGW*LGH);
+// Beta v2.00.00: filled row by row (where each row crosses the outline) instead of a point-in-polygon test per cell.
+// W.foreign: land across the border (Pakistan, China, Nepal). It is drawn as land but you cannot go there (value 3).
+function fillPoly(P,val,keep){for(let j=0;j<LGH;j++){const z=Z0+j*LG;const xs=[];for(let a=0,b=P.length-1;a<P.length;b=a++){const za=P[a][1],zb=P[b][1];if((za>z)!==(zb>z))xs.push((P[b][0]-P[a][0])*(z-za)/(zb-za)+P[a][0]);}if(!xs.length)continue;xs.sort((p,q)=>p-q);
+  for(let k=0;k+1<xs.length;k+=2){const i0=Math.max(0,Math.ceil(xs[k]/LG)),i1=Math.min(LGW-1,Math.ceil(xs[k+1]/LG)-1);for(let i=i0;i<=i1;i++){const o=j*LGW+i;if(!keep||!landGrid[o])landGrid[o]=val;}}}}
+fillPoly(W.land,1,false);for(const P of W.foreign||[])fillPoly(P,3,true);
+for(const is of W.islands)for(let j=Math.floor((is.z-is.r-Z0)/LG);j<=Math.ceil((is.z+is.r-Z0)/LG);j++)for(let i=Math.floor((is.x-is.r)/LG);i<=Math.ceil((is.x+is.r)/LG);i++){if(Math.hypot(i*LG-is.x,Z0+j*LG-is.z)<=is.r&&i>=0&&j>=0&&i<LGW&&j<LGH)landGrid[j*LGW+i]=2;}
+function isLand(x,z){if(x<0||z<Z0||x>W.W||z>W.H)return false;const v=landGrid[Math.round((z-Z0)/LG)*LGW+Math.round(x/LG)];return v===1||v===2;}
+function isForeign(x,z){if(x<0||z<Z0||x>W.W||z>W.H)return false;return landGrid[Math.round((z-Z0)/LG)*LGW+Math.round(x/LG)]===3;}
 function onIsland(x,z){for(const is of W.islands)if(Math.hypot(x-is.x,z-is.z)<is.r)return true;return false;}
 function segD(px,pz,ax,az,bx,bz){const dx=bx-ax,dz=bz-az,l2=dx*dx+dz*dz;let t=l2?((px-ax)*dx+(pz-az)*dz)/l2:0;t=clamp(t,0,1);return Math.hypot(px-ax-dx*t,pz-az-dz*t);}
-function inLake(x,z){for(const l of W.lakes){const dx=(x-l.x)/l.rx,dz=(z-l.z)/l.rz;if(dx*dx+dz*dz<1&&!onIsland(x,z))return l;}return null;}
-function inRiver(x,z){for(const r of W.rivers){const p=r.pts;for(let k=0;k<p.length-1;k++)if(segD(x,z,p[k][0],p[k][1],p[k+1][0],p[k+1][1])<r.w/2)return r;}return null;}
+const LKG=new Map();for(const l of W.lakes)for(let i=Math.floor((l.x-l.rx)/100);i<=Math.floor((l.x+l.rx)/100);i++)for(let j=Math.floor((l.z-l.rz)/100);j<=Math.floor((l.z+l.rz)/100);j++){const key=i*8192+j;let a=LKG.get(key);if(!a)LKG.set(key,a=[]);a.push(l);}
+function inLake(x,z){const ls=LKG.get(Math.floor(x/100)*8192+Math.floor(z/100));if(!ls)return null;for(const l of ls){const dx=(x-l.x)/l.rx,dz=(z-l.z)/l.rz;if(dx*dx+dz*dz<1&&!onIsland(x,z))return l;}return null;}
+// Beta v1.01.30: a bounding box per polyline (cached by its points array) so the many "is it near this road or river?"
+// checks during the world build skip the far ones straight away
+const PBOX=new WeakMap();function pbox(P){let b=PBOX.get(P);if(!b){b=[1e9,1e9,-1e9,-1e9];for(const p of P){if(p[0]<b[0])b[0]=p[0];if(p[1]<b[1])b[1]=p[1];if(p[0]>b[2])b[2]=p[0];if(p[1]>b[3])b[3]=p[1];}PBOX.set(P,b);}return b;}
+const outBox=(P,x,z,m)=>{const b=pbox(P);return x<b[0]-m||x>b[2]+m||z<b[1]-m||z>b[3]+m;};
+// Beta v2.00.00: river pieces and lakes are found through a 100 m grid instead of testing every river and lake
+const RVG=100,rvGrid=new Map();for(const r of W.rivers){const p=r.pts;for(let k=0;k<p.length-1;k++){const m=r.w/2+2,x0=Math.min(p[k][0],p[k+1][0])-m,x1=Math.max(p[k][0],p[k+1][0])+m,z0=Math.min(p[k][1],p[k+1][1])-m,z1=Math.max(p[k][1],p[k+1][1])+m;
+  for(let i=Math.floor(x0/RVG);i<=Math.floor(x1/RVG);i++)for(let j=Math.floor(z0/RVG);j<=Math.floor(z1/RVG);j++){const key=i*8192+j;let a=rvGrid.get(key);if(!a)rvGrid.set(key,a=[]);a.push(r,k);}}}
+function inRiver(x,z){const a=rvGrid.get(Math.floor(x/RVG)*8192+Math.floor(z/RVG));if(!a)return null;for(let n=0;n<a.length;n+=2){const r=a[n],p=r.pts,k=a[n+1];if(segD(x,z,p[k][0],p[k][1],p[k+1][0],p[k+1][1])<r.w/2)return r;}return null;}
 // Beta v1.01.23: pools that landmarks draw (a plunge pool under falls, a palace tank) are real water: you swim in them and vehicles stop at the edge
 const POOLS=[];function addPool(x,z,rx,rz,rect){POOLS.push({x,z,rx,rz,rect:!!rect});}
 function inPool(x,z){for(const q of POOLS){const dx=(x-q.x)/q.rx,dz=(z-q.z)/q.rz;if(q.rect?Math.abs(dx)<1&&Math.abs(dz)<1:dx*dx+dz*dz<1)return q;}return null;}
-function isWater(x,z){return !isLand(x,z)||!!inLake(x,z)||!!inRiver(x,z)||(POOLS.length>0&&!!inPool(x,z));}
+function isWater(x,z){return (!isLand(x,z)&&!isForeign(x,z))||!!inLake(x,z)||!!inRiver(x,z)||(POOLS.length>0&&!!inPool(x,z));}
 const EDGES=[];const RH=50,rHash=new Map();const ROADS=[];
 function addRoad(pts,w,kind,name){const r={pts,w,kind,name,edges:[]};ROADS.push(r);for(let k=0;k<pts.length-1;k++){const [ax,az]=pts[k],[bx,bz]=pts[k+1];const len=Math.hypot(bx-ax,bz-az);if(len<1)continue;
     const e={id:EDGES.length,ax,az,bx,bz,len,dx:(bx-ax)/len,dz:(bz-az)/len,w,kind,road:r,k,lane:w>=16?4:w>=12?3.5:1.6};if(kind!=='city'&&kind!=='coast'&&kind!=='service'&&w>=12){e.multi=true;e.laneO=w*.355;e.laneI=w*.135;e.lane=e.laneO;}EDGES.push(e);/* v1.01.22: highways have 2 lanes each way (left slow, right fast) */r.edges.push(e);
@@ -134,7 +184,7 @@ function roadAt(x,z,m=0){for(const id of edgesNear(x,z)){const e=EDGES[id];if(se
 function nearestRoadPoint(x,z,maxR=400){let best=null,bd=1e9;for(let r=RH;r<=maxR;r+=RH){for(let ox=-r;ox<=r;ox+=RH)for(let oz=-r;oz<=r;oz+=RH){for(const id of edgesNear(x+ox,z+oz)){const e=EDGES[id];const l2=e.len*e.len;let t=((x-e.ax)*(e.bx-e.ax)+(z-e.az)*(e.bz-e.az))/l2;t=clamp(t,0,1);const px=e.ax+(e.bx-e.ax)*t,pz=e.az+(e.bz-e.az)*t;const d=Math.hypot(px-x,pz-z);if(d<bd){bd=d;best={x:px,z:pz,e,t:t*e.len};}}}if(best)return best;}return best;}
 /* Beta v1.01.24: water with a margin, for people: the coast you see is drawn more coarsely than isWater, so keep 5 m off it */
 function wetNear(x,z,m=5){return isWater(x,z)||isWater(x+m,z)||isWater(x-m,z)||isWater(x,z+m)||isWater(x,z-m);}
-function drivable(x,z){if(POOLS.length&&inPool(x,z))return false;return !!roadAt(x,z,.5)||(!isWater(x,z)&&x>2&&z>2&&x<W.W-2&&z<W.H-2);}
+function drivable(x,z){if(POOLS.length&&inPool(x,z))return false;return !!roadAt(x,z,.5)||(!isWater(x,z)&&!isForeign(x,z)&&x>2&&z>Z0+2&&x<W.W-2&&z<W.H-2);}
 
 /* colliders */
 const CHS=64,cHash=new Map();const colliders=[];
@@ -145,54 +195,66 @@ function collide(p,r,foot){let hit=false;const seen=new Set();for(let i=Math.flo
 /* ================= terrain ================= */
 function inE(b,x,z){const dx=(x-b.x)/b.rx,dz=(z-b.z)/b.rz;return dx*dx+dz*dz;}
 const zoneRects=W.zones.map(z=>({z,x0:z.x0-24,z0:z.z0-24,x1:z.x0+z.nx*80+24,z1:z.z0+z.nz*80+24}));
-function zoneAt(x,z,m=0){for(const r of zoneRects)if(x>r.x0-m&&x<r.x1+m&&z>r.z0-m&&z<r.z1+m)return r.z;return null;}
+// Beta v2.00.00: zones are looked up through a 250 m grid (the map has over 450 towns now)
+const ZG=250,zGrid=new Map();for(const r of zoneRects)for(let i=Math.floor(r.x0/ZG);i<=Math.floor(r.x1/ZG);i++)for(let j=Math.floor(r.z0/ZG);j<=Math.floor(r.z1/ZG);j++){const k=i*4096+j;let a=zGrid.get(k);if(!a)zGrid.set(k,a=[]);a.push(r);}
+function zoneAt(x,z,m=0){if(m>0){const r=zoneAt(x,z,0);if(r)return r;}const i0=Math.floor((x-m)/ZG),i1=Math.floor((x+m)/ZG),j0=Math.floor((z-m)/ZG),j1=Math.floor((z+m)/ZG);
+  for(let i=i0;i<=i1;i++)for(let j=j0;j<=j1;j++){const a=zGrid.get(i*4096+j);if(a)for(const r of a)if(x>r.x0-m&&x<r.x1+m&&z>r.z0-m&&z<r.z1+m)return r.z;}return null;}
 const cA=new THREE.Color(),cB2=new THREE.Color();
 function biomeColor(x,z,out){const n=hash(Math.floor(x/90)*31.7+Math.floor(z/90)*7.3),n2=hash(Math.floor(x/23)+Math.floor(z/23)*57);
-  if(!isLand(x,z)&&!onIsland(x,z))return out.set('#6c7d74');
-  let coast=false;for(const [ox,oz] of [[60,0],[-60,0],[0,60],[0,-60]])if(!isLand(x+ox,z+oz)){coast=true;break;}
+  const fr=isForeign(x,z);if(!fr&&!isLand(x,z)&&!onIsland(x,z))return out.set('#6c7d74');
+  let coast=false;if(!fr)for(const [ox,oz] of [[60,0],[-60,0],[0,60],[0,-60]])if(!isLand(x+ox,z+oz)&&!isForeign(x+ox,z+oz)){coast=true;break;}
   if(coast)return out.set('#e2cf9f').offsetHSL(0,0,(n2-.5)*.04);
   for(const b of W.biomes){const e=inE(b,x,z);if(e<1){if(b.kind==='rann')return out.set('#f2f0e8').offsetHSL(0,0,(n2-.5)*.03);if(b.kind==='desert')return out.set(e<.6?'#dcb878':'#cfb07a').offsetHSL((n-.5)*.02,0,(n2-.5)*.05);
       if(b.kind==='forest')return out.set(n<.5?'#5f7d3a':'#6f8a40').offsetHSL(0,0,(n2-.5)*.05);if(b.kind==='ghats')return out.set(n<.5?'#4f7a36':'#5d8a3c').offsetHSL(0,0,(n2-.5)*.06);if(b.kind==='scrub')return out.set('#b8a46a').offsetHSL(0,0,(n2-.5)*.06);
       if(b.kind==='laterite')return out.set(n<.4?'#b0643c':'#8f8a45').offsetHSL(0,0,(n2-.5)*.05);if(b.kind==='coffee')return out.set(n<.5?'#3f6b30':'#4b7a35').offsetHSL(0,0,(n2-.5)*.05);
       if(b.kind==='tea')return out.set(Math.floor(z/14)%2?'#5aa83c':'#4c9433').offsetHSL(0,0,(n2-.5)*.04);if(b.kind==='paddy')return out.set(n<.5?'#8fc24a':'#a6cf55').offsetHSL(0,0,(n2-.5)*.04);
-      if(b.kind==='coconut')return out.set(n<.5?'#6f9a3e':'#7ea845').offsetHSL(0,0,(n2-.5)*.04);if(b.kind==='deccan')return out.set(n<.4?'#8f8262':n<.7?'#a99a62':'#9aa04e').offsetHSL(0,0,(n2-.5)*.05);}}
+      if(b.kind==='coconut')return out.set(n<.5?'#6f9a3e':'#7ea845').offsetHSL(0,0,(n2-.5)*.04);
+      // Beta v2.00.00: the north and the east
+      if(b.kind==='snow')return out.set(e<.55?'#f4f6f8':n<.5?'#dfe4ea':'#c9cfd6').offsetHSL(0,0,(n2-.5)*.03);if(b.kind==='colddesert')return out.set(n<.35?'#a88f72':n<.7?'#b59c7c':'#9a8070').offsetHSL((n-.5)*.03,0,(n2-.5)*.05);
+      if(b.kind==='alpine')return out.set(n<.5?'#7f9a55':'#90a862').offsetHSL(0,0,(n2-.5)*.05);if(b.kind==='pine')return out.set(n<.5?'#3d5f34':'#466b3a').offsetHSL(0,0,(n2-.5)*.05);
+      if(b.kind==='wheat')return out.set(n<.3?'#c9b85a':n<.65?'#a9b84e':'#d2c46a').offsetHSL(0,0,(n2-.5)*.04);if(b.kind==='mustard')return out.set(n<.5?'#d9c23a':'#c9b83f').offsetHSL(0,0,(n2-.5)*.04);
+      if(b.kind==='ravine')return out.set(n<.5?'#a8835a':'#96764f').offsetHSL(0,0,(n2-.5)*.07);if(b.kind==='sal')return out.set(n<.5?'#4c7034':'#58803a').offsetHSL(0,0,(n2-.5)*.05);
+      if(b.kind==='terai')return out.set(n<.5?'#9cb85a':'#86a64a').offsetHSL(0,0,(n2-.5)*.05);if(b.kind==='orchard')return out.set(Math.floor(x/12)%2?'#6d9440':'#5f8838').offsetHSL(0,0,(n2-.5)*.04);
+      if(b.kind==='mangrove')return out.set(n<.5?'#3f6a3c':'#4a7444').offsetHSL(0,0,(n2-.5)*.04);if(b.kind==='mine')return out.set(n<.5?'#5a4a3e':'#6e5a48').offsetHSL(0,0,(n2-.5)*.05);if(b.kind==='deccan')return out.set(n<.4?'#8f8262':n<.7?'#a99a62':'#9aa04e').offsetHSL(0,0,(n2-.5)*.05);}}
+  if(fr)return out.set(n<.5?'#b3a684':'#a99c7a').offsetHSL(0,0,(n2-.5)*.04);
   const zz=zoneAt(x,z,10);if(zz)return out.set(zz.style==='gold'||zz.style==='pink'?'#c7ad86':'#9a937f');
   const fields=['#8aa84f','#a8b85a','#c2b46a','#7e9a48','#b39a5c','#9fae55'];return out.set(fields[Math.floor(n*fields.length)]).offsetHSL(0,0,(n2-.5)*.04);}
 const TG=40;
-// Beta v1.01.29: the ground is cut into 800 m tiles, so only the tiles near you are drawn (it was one mesh of 200,000
+// Beta v1.01.30: the ground is cut into 800 m tiles, so only the tiles near you are drawn (it was one mesh of 200,000
 // triangles drawn every frame). Each vertex height and colour is the same as before.
-{const TT=800,mat=new THREE.MeshLambertMaterial({vertexColors:true});const nTx=Math.ceil(W.W/TT),nTz=Math.ceil(W.H/TT);const hgt=(x,z)=>isLand(x,z)||onIsland(x,z)?0:-4;
-  for(let ti=0;ti<nTx;ti++)for(let tj=0;tj<nTz;tj++){const x0=ti*TT,z0=tj*TT,w=Math.min(TT,W.W-x0),d=Math.min(TT,W.H-z0);const g=new THREE.PlaneGeometry(w,d,Math.max(1,Math.round(w/TG)),Math.max(1,Math.round(d/TG)));g.rotateX(-Math.PI/2);g.translate(w/2,0,d/2);
+{const TT=800,mat=new THREE.MeshLambertMaterial({vertexColors:true});const nTx=Math.ceil(W.W/TT),nTz=Math.ceil((W.H-Z0)/TT);const hgt=(x,z)=>isLand(x,z)||onIsland(x,z)||isForeign(x,z)?0:-4;
+  for(let ti=0;ti<nTx;ti++)for(let tj=0;tj<nTz;tj++){const x0=ti*TT,z0=Z0+tj*TT,w=Math.min(TT,W.W-x0),d=Math.min(TT,W.H-z0);const g=new THREE.PlaneGeometry(w,d,Math.max(1,Math.round(w/TG)),Math.max(1,Math.round(d/TG)));g.rotateX(-Math.PI/2);g.translate(w/2,0,d/2);
     const pos=g.attributes.position;const col=new Float32Array(pos.count*3);for(let i=0;i<pos.count;i++){const x=pos.getX(i)+x0,z=pos.getZ(i)+z0;pos.setY(i,hgt(x,z));biomeColor(x,z,cA);col[i*3]=cA.r;col[i*3+1]=cA.g;col[i*3+2]=cA.b;}
     g.setAttribute('color',new THREE.BufferAttribute(col,3));g.computeVertexNormals();
     // normals along the tile edges look across the edge too, so neighbouring tiles shade the same
     const nor=g.attributes.normal;for(let i=0;i<pos.count;i++){const lx=pos.getX(i),lz=pos.getZ(i);if(lx>.1&&lx<w-.1&&lz>.1&&lz<d-.1)continue;const x=lx+x0,z=lz+z0;const sx=hgt(x-TG,z)-hgt(x+TG,z),sz=hgt(x,z-TG)-hgt(x,z+TG);const n=new THREE.Vector3(sx,2*TG,sz).normalize();nor.setXYZ(i,n.x,n.y,n.z);}
-    const m=new THREE.Mesh(g,mat);m.position.set(x0,0,z0);m.receiveShadow=true;m.matrixAutoUpdate=false;m.updateMatrix();scene.add(m);}}
+    const m=new THREE.Mesh(lean(g),mat);m.position.set(x0,0,z0);m.receiveShadow=true;m.matrixAutoUpdate=false;m.updateMatrix();scene.add(m);}}
 // The sea is split into many small triangles so its depth stays exact near the camera (one huge quad can poke through the land).
-const outer=new THREE.Mesh(new THREE.PlaneGeometry(W.W*5,W.H*5,120,Math.round(120*W.H/W.W)),GFX.lvl==='saver'?new THREE.MeshLambertMaterial({color:0x3479a0,map:seaTex}):new THREE.MeshPhongMaterial({color:0x2a6f97,map:seaTex,shininess:90,specular:0x99bbdd}));
-seaTex.repeat.set(140,180);outer.rotation.x=-Math.PI/2;outer.position.set(W.W/2,-1.1,W.H/2);scene.add(outer);
-const edgeLand=new THREE.Mesh(new THREE.PlaneGeometry(W.W*3,W.H*3),LMat('#c7b089'));edgeLand.rotation.x=-Math.PI/2;edgeLand.position.set(W.W/2,-0.12,-W.H*1.5+2);scene.add(edgeLand);
-const edgeE=new THREE.Mesh(new THREE.PlaneGeometry(W.W*2,W.H*4),LMat('#9fae55'));edgeE.rotation.x=-Math.PI/2;edgeE.position.set(W.W+W.W-2,-0.12,W.H/2);scene.add(edgeE);
-const waterMat=new THREE.MeshPhongMaterial({color:0x2f78a8,shininess:90,specular:0x88aacc,transparent:true,opacity:.92});
+const outer=new THREE.Mesh(new THREE.PlaneGeometry(W.W*5,(W.H-Z0)*5,120,Math.round(120*(W.H-Z0)/W.W)),GFX.lvl==='saver'?new THREE.MeshLambertMaterial({color:0x3479a0,map:seaTex}):new THREE.MeshPhongMaterial({color:0x2a6f97,map:seaTex,shininess:90,specular:0x99bbdd}));
+seaTex.repeat.set(140,180);outer.rotation.x=-Math.PI/2;outer.position.set(W.W/2,-1.1,(W.H+Z0)/2);scene.add(outer);
+const edgeLand=new THREE.Mesh(new THREE.PlaneGeometry(W.W*3,W.H*3),LMat('#c7b089'));edgeLand.rotation.x=-Math.PI/2;edgeLand.position.set(W.W/2,-0.12,Z0-W.H*1.5+2);scene.add(edgeLand);
+// the land beyond the east edge of the map; Beta v1.01.30: only north of the Bay of Bengal (W.eastSeaZ), the sea stays open below it
+const eZ1=W.eastSeaZ||W.H*2.5,eZ0=Z0-W.H*1.5;const edgeE=new THREE.Mesh(new THREE.PlaneGeometry(W.W*2,eZ1-eZ0),LMat('#9fae55'));edgeE.rotation.x=-Math.PI/2;edgeE.position.set(W.W+W.W-2,-0.12,(eZ0+eZ1)/2);scene.add(edgeE);
+const waterMat=new THREE.MeshPhongMaterial({color:0x2f78a8,shininess:90,specular:0x88aacc,transparent:true,opacity:.92,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-4});
 for(const l of W.lakes){const g=new THREE.CircleGeometry(1,40);g.rotateX(-Math.PI/2);g.scale(l.rx,1,l.rz);g.translate(l.x,.04,l.z);addStatic(g,waterMat,false,true);}
 for(const r of W.rivers){const p=r.pts;for(let k=0;k<p.length-1;k++){const [ax,az]=p[k],[bx,bz]=p[k+1];const len=Math.hypot(bx-ax,bz-az),a=Math.atan2(bx-ax,bz-az);const g=new THREE.PlaneGeometry(r.w,len+r.w*.6);g.rotateX(-Math.PI/2);g.rotateY(a);g.translate((ax+bx)/2,.012,(az+bz)/2);addStatic(g,waterMat,false,true);}}
 for(const is of W.islands){const g=new THREE.CircleGeometry(is.r,24);g.rotateX(-Math.PI/2);g.translate(is.x,.06,is.z);addStatic(g,M.sand,false,true);}
 
 /* ================= decoration helpers ================= */
 function palm(x,z){const h=R(7,9.5),tilt=R(-.15,.15);const tr=new THREE.CylinderGeometry(.22,.38,h,6);tr.translate(0,h/2,0);tr.rotateZ(tilt);tr.translate(x,0,z);addStatic(tr,M.trunk);const tx=x-Math.sin(tilt)*h,ty=Math.cos(tilt)*h;
-  for(let k=0;k<7;k++){const l=new THREE.BoxGeometry(.5,.06,4.2);l.translate(0,0,2);l.rotateX(.45+R(0,.25));l.rotateY(k*Math.PI*2/7+R(0,.4));l.translate(tx,ty,z);addStatic(l,M.leaf);}}
-function tree(x,z,s=1,mat){const t=new THREE.CylinderGeometry(.25*s,.35*s,3*s,5);t.translate(x,1.5*s,z);addStatic(t,M.trunk);const f=new THREE.IcosahedronGeometry(2.4*s*R(.85,1.15),0);f.translate(x,4*s,z);addStatic(f,mat||M.tree);}
+  for(let k=0;k<7;k++){const l=BoxG(.5,.06,4.2);l.translate(0,0,2);l.rotateX(.45+R(0,.25));l.rotateY(k*Math.PI*2/7+R(0,.4));l.translate(tx,ty,z);addStatic(l,M.leaf);}}
+function tree(x,z,s=1,mat){const t=tplCopy(_TRK,s,s,s);t.translate(x,1.5*s,z);addStatic(t,M.trunk);const k=s*R(.85,1.15),f=tplCopy(_CRN,k,k,k);f.translate(x,4*s,z);addStatic(f,mat||M.tree);}
 const flags=[];const flagGeo=new THREE.BufferGeometry();flagGeo.setAttribute('position',new THREE.Float32BufferAttribute([0,0,0,0,-1.6,0,3,-.8,0],3));flagGeo.computeVertexNormals();const flagMat=new THREE.MeshLambertMaterial({color:0xff8a1c,side:THREE.DoubleSide});
 function addFlag(x,y,z,big){const f=new THREE.Mesh(flagGeo,flagMat);f.position.set(x,y,z);if(big)f.scale.setScalar(2.2);scene.add(f);flags.push(f);box(.08,big?6:3.5,.08,x,y-(big?2.5:1.7),z,M.pole);}
 const signTexCache=[];
-// the India Bay logo for boards in the world (Beta v1.01.29): drawn when the image has loaded
+// the India Bay logo for boards in the world (Beta v1.01.30): drawn when the image has loaded
 const LOGO_IMG=new Image();LOGO_IMG.src='assets/logo-board.jpg';const logoWait=[];LOGO_IMG.onload=()=>{for(const f of logoWait.splice(0))try{f();}catch(e){}};
 function logoTex(w,h,line){const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');const t=new THREE.CanvasTexture(c);
   const draw=()=>{const g=x.createLinearGradient(0,0,w,0);g.addColorStop(0,'#123d4c');g.addColorStop(1,'#1d5f73');x.fillStyle=g;x.fillRect(0,0,w,h);const sq=Math.min(h*.92,w*.45);if(LOGO_IMG.complete&&LOGO_IMG.naturalWidth)x.drawImage(LOGO_IMG,(h-sq)/2,(h-sq)/2,sq,sq);
     const tx=(h-sq)/2*2+sq,tw=w-tx-h*.06;if(tw>w*.25){x.fillStyle='#ffc93c';x.textAlign='left';x.textBaseline='middle';let f=Math.round(h*.24);x.font=`900 ${f}px "Baloo 2",sans-serif`;while(x.measureText('INDIA BAY').width>tw&&f>10){f--;x.font=`900 ${f}px "Baloo 2",sans-serif`;}x.fillText('INDIA BAY',tx,h*.38);x.fillStyle='#fff6d8';let f2=Math.round(h*.11);x.font=`700 ${f2}px "Baloo 2",sans-serif`;while(x.measureText(line).width>tw&&f2>8){f2--;x.font=`700 ${f2}px "Baloo 2",sans-serif`;}x.fillText(line,tx,h*.62);}t.needsUpdate=true;};
   draw();if(!(LOGO_IMG.complete&&LOGO_IMG.naturalWidth))logoWait.push(draw);return t;}
 function signTex(t,fg,bg,w=512,h=128){return canvasTex(w,h,x=>{x.fillStyle=bg;x.fillRect(0,0,w,h);x.strokeStyle=fg;x.lineWidth=Math.max(4,h/20);x.strokeRect(h/14,h/14,w-h/7,h-h/7);x.fillStyle=fg;x.textAlign='center';x.textBaseline='middle';const L=String(t).split('|').map(q=>q.trim()).filter(Boolean).slice(0,2);if(L.length>1){const fit=(q,sz,wt)=>{x.font=`${wt} ${sz}px "Baloo 2", sans-serif`;while(x.measureText(q).width>w*.8&&sz>8){sz-=2;x.font=`${wt} ${sz}px "Baloo 2", sans-serif`;}return sz;};const f1=fit(L[0],Math.round(h*.34),800);x.fillText(L[0],w/2,h*.4);fit(L[1],Math.round(Math.max(Math.min(h*.2,f1*1.05),h*.14)),700);x.fillText(L[1],w/2,h*.71);return;}t=L[0]||'';let s=h*.55;x.font=`800 ${s}px "Baloo 2", sans-serif`;while(x.measureText(t).width>w*.86&&s>12){s-=4;x.font=`800 ${s}px "Baloo 2", sans-serif`;}x.fillText(t,w/2,h*.56);},false);}
-// a text board readable from both sides: the back gets its own copy, so it is never seen mirrored (Beta v1.01.29)
+// a text board readable from both sides: the back gets its own copy, so it is never seen mirrored (Beta v1.01.30)
 function twoSided(m){const mt=m.material;if(!mt||!mt.map)return m;mt.side=THREE.FrontSide;const b=new THREE.Mesh(m.geometry,mt.clone());b.material.side=THREE.FrontSide;b.rotation.y=Math.PI;b.position.z=-.012;b.userData=m.userData;m.add(b);return m;}
 function addSign(text,x,y,z,ry,w,h,fg,bg){const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:signTex(text,fg,bg,512,Math.round(512*h/w))}));twoSided(m);m.position.set(x,y,z);m.rotation.y=ry;scene.add(m);return m;}
 const clockTex=canvasTex(128,128,x=>{x.fillStyle='#f6f1e3';x.beginPath();x.arc(64,64,60,0,6.29);x.fill();x.strokeStyle='#2a2420';x.lineWidth=6;x.stroke();x.lineWidth=5;x.beginPath();x.moveTo(64,64);x.lineTo(64,24);x.moveTo(64,64);x.lineTo(92,70);x.stroke();},false);
@@ -200,7 +262,7 @@ const clockTex=canvasTex(128,128,x=>{x.fillStyle='#f6f1e3';x.beginPath();x.arc(6
 /* ================= city + building generation ================= */
 let curZone=null,curStyle=STYLES.metro;
 const BLDS=[];/* Beta v1.01.24: every city building, so features can let you walk in */
-const BLDH=[];function building(x,z,w,d,h,mat,opts={}){if(!opts.noEnter)BLDS.push({x,z,w,d,h,old:!!opts.old});BLDH.push([x,z,w/2,d/2,h]);const g=new THREE.BoxGeometry(w,h,d);const uv=g.attributes.uv;
+const BLDH=[];function building(x,z,w,d,h,mat,opts={}){if(!opts.noEnter)BLDS.push({x,z,w,d,h,old:!!opts.old});BLDH.push([x,z,w/2,d/2,h]);const g=BoxG(w,h,d);const uv=g.attributes.uv;
   for(let f=0;f<6;f++)for(let k=0;k<4;k++){const i=f*4+k;let u=uv.getX(i),v=uv.getY(i);if(f===2||f===3){u=.01;v=.01;}else{const fw=f<2?d:w;u*=fw/(opts.old?24:32);v*=h/(opts.old?24:32);}uv.setXY(i,u,v);}
   g.translate(x,h/2+.3,z);addStatic(g,mat);addCol(x,z,w/2+.15,d/2+.15,true,true);
   if(opts.cottage){const r=new THREE.CylinderGeometry(0,Math.max(w,d)*.75,3,4,1);r.rotateY(Math.PI/4);r.scale(w/Math.max(w,d),1,d/Math.max(w,d));r.translate(x,h+1.8,z);addStatic(r,M.roofRed);return;}
@@ -233,7 +295,7 @@ const LCTX={THREE,M,rnd,pick,add:(g,m,c,r)=>addStatic(g,m,c!==false,r!==false),b
    1. A road never runs off into the sea: each end is trimmed back to dry land (bridges and causeways are left alone).
    2. Sharp bends become smooth curves: a corner is replaced by a short arc, except where another road joins at that point. */
 {const wet=(x,z)=>!isLand(x,z)||!!inLake(x,z);
-  const hwPtNear=(h,x,z,r)=>W.highways.some(o=>o!==h&&(o.pts.some(p=>Math.hypot(p[0]-x,p[1]-z)<r)||o.pts.some((p,i)=>i<o.pts.length-1&&segD(x,z,p[0],p[1],o.pts[i+1][0],o.pts[i+1][1])<r*.6)))||W.zones.some(q=>x>q.x0-r&&x<q.x0+q.nx*80+r&&z>q.z0-r&&z<q.z0+q.nz*80+r)||W.airports.some(a=>a.access.some(p=>Math.hypot(p[0]-x,p[1]-z)<r));
+  const hwPtNear=(h,x,z,r)=>W.highways.some(o=>o!==h&&!outBox(o.pts,x,z,r)&&(o.pts.some(p=>Math.hypot(p[0]-x,p[1]-z)<r)||o.pts.some((p,i)=>i<o.pts.length-1&&segD(x,z,p[0],p[1],o.pts[i+1][0],o.pts[i+1][1])<r*.6)))||W.zones.some(q=>x>q.x0-r&&x<q.x0+q.nx*80+r&&z>q.z0-r&&z<q.z0+q.nz*80+r)||W.airports.some(a=>a.access.some(p=>Math.hypot(p[0]-x,p[1]-z)<r));
   function trimEnd(P){// walk in from the first point until the road is on land, then keep 3 m of margin
     let i=0,acc=null;while(i<P.length-1){const a=P[i],b=P[i+1],L=Math.hypot(b[0]-a[0],b[1]-a[1]);let hit=-1;for(let t=0;t<=L;t+=3){if(!wet(a[0]+(b[0]-a[0])*t/L,a[1]+(b[1]-a[1])*t/L)){hit=t;break;}}if(hit<0){i++;continue;}
       if(i===0&&hit===0)return P;const t=Math.min(L,hit+3);acc=[a[0]+(b[0]-a[0])*t/L,a[1]+(b[1]-a[1])*t/L];return [acc].concat(P.slice(i+1));}return null;}
@@ -256,7 +318,7 @@ for(const z of W.zones){const x1=z.x0+z.nx*80,z1=z.z0+z.nz*80;
     for(const r of out)addRoad([r[0],r[r.length-1]],w,'city',name);};
   for(let i=0;i<=z.nx;i++)clip([[z.x0+i*80,z.z0],[z.x0+i*80,z1]],16,z.name);for(let j=0;j<=z.nz;j++)clip([[z.x0,z.z0+j*80],[x1,z.z0+j*80]],16,z.name);}
 // highway ends meet a town at a grid junction, arriving square to the edge (no long shallow overlaps with the grid)
-const onOtherHw=(h,x,z)=>W.highways.some(o=>o!==h&&o.pts.some((p,i)=>i<o.pts.length-1&&segD(x,z,p[0],p[1],o.pts[i+1][0],o.pts[i+1][1])<12));
+const onOtherHw=(h,x,z)=>W.highways.some(o=>o!==h&&!outBox(o.pts,x,z,14)&&o.pts.some((p,i)=>i<o.pts.length-1&&segD(x,z,p[0],p[1],o.pts[i+1][0],o.pts[i+1][1])<12));
 function snapEnds(h){const P=h.pts;for(const end of [0,1]){const k=end?P.length-1:0,nb=end?P.length-2:1;const [x,z]=P[k];if(h._keep&&h._keep[end])continue;let J=null,jd=60,Z=null;
     for(const zn of W.zones){const x1=zn.x0+zn.nx*80,z1=zn.z0+zn.nz*80;if(x<zn.x0-60||x>x1+60||z<zn.z0-60||z>z1+60)continue;const i=clamp(Math.round((x-zn.x0)/80),0,zn.nx),j=clamp(Math.round((z-zn.z0)/80),0,zn.nz);const jx=zn.x0+i*80,jz=zn.z0+j*80,d=Math.hypot(jx-x,jz-z);if(d<jd&&isLand(jx,jz)&&!inLake(jx,jz)&&!inRiver(jx,jz)){jd=d;J=[jx,jz,i,j];Z=zn;}}
     if(!J)continue;P[k]=[J[0],J[1]];const [px,pz]=P[nb];const vx=px-J[0],vz=pz-J[1],vl=Math.hypot(vx,vz);if(vl<45)continue;
@@ -297,7 +359,7 @@ function flyDeck(r){const pos=[],uv=[],idx=[],dpos=[],didx=[];const w=r.w,step=5
   const W2=w/2+.6;strip(dpos,didx,-W2,W2,-.9,-.9);strip(dpos,didx,-W2,-W2,-.9,.05);strip(dpos,didx,W2,W2,.05,-.9);strip(dpos,didx,-W2,-W2,.05,.95);strip(dpos,didx,W2,W2,.95,.05);strip(dpos,didx,-W2+.35,-W2+.35,.95,.05);strip(dpos,didx,W2-.35,W2-.35,.05,.95);
   const dg=new THREE.BufferGeometry();dg.setAttribute('position',new THREE.Float32BufferAttribute(dpos,3));dg.setIndex(didx);dg.computeVertexNormals();const cm=M.concrete.clone();cm.side=THREE.DoubleSide;addStatic(dg,cm,false,true);
   // pillars where the deck is high, and lamp posts on the parapet
-  pts.forEach((p,i)=>{if(i%6||p.y<2.2)return;const h=p.y-.9;const c=new THREE.CylinderGeometry(.9,1.05,h,10);c.translate(p.x,h/2,p.z);addStatic(c,M.concrete);const cap=new THREE.BoxGeometry(w*.7,.7,1.6);cap.rotateY(Math.atan2(-p.nz,p.nx));cap.translate(p.x,p.y-1.25,p.z);addStatic(cap,M.concrete);});
+  pts.forEach((p,i)=>{if(i%6||p.y<2.2)return;const h=p.y-.9;const c=new THREE.CylinderGeometry(.9,1.05,h,10);c.translate(p.x,h/2,p.z);addStatic(c,M.concrete);const cap=BoxG(w*.7,.7,1.6);cap.rotateY(Math.atan2(-p.nz,p.nx));cap.translate(p.x,p.y-1.25,p.z);addStatic(cap,M.concrete);});
   // local ads: flex wraps on some pillars, banners on the outer face of the parapets (registered once SLOTS exist)
   pts.forEach((p,i)=>{if(p.y<6)return;if(i%18===0)FLY_ADS.push({id:`fp:${r.name}:${i}`,x:p.x,y:0,z:p.z,rot:Math.atan2(-p.nz,p.nx)+Math.PI/2,kind:'pillar',road:'flyover',zone:null,bw:1.7,bh:2.4,y0:p.y-3.6,off:1.1});
     if(i%30===15){const sd=(i/30|0)%2?1:-1;FLY_ADS.push({id:`fb:${r.name}:${i}`,x:p.x+p.nx*sd*(w/2+.66),y:0,z:p.z+p.nz*sd*(w/2+.66),rot:Math.atan2(p.nx*sd,p.nz*sd),kind:'parapet',road:'flyover',zone:null,bw:9,bh:1.1,y0:p.y+.35});}});
@@ -307,7 +369,7 @@ function roadRibbons(){ROADS.forEach((r,ri)=>{if(r.fly){flyDeck(r);return;}const
   const y=isCity?(Math.abs(r.pts[0][0]-r.pts[1][0])<1?.02:.026):r.kind==='bridge'?.08:r.kind==='coast'?.03:.036+(ri%6)*.006;
   for(const e of r.edges){const spans=isCity?[[0,e.len]]:hwSpans(e,ri);for(const [u0,u1] of spans){const seg=Math.ceil((u1-u0)/160);for(let s=0;s<seg;s++){const t0=u0+(u1-u0)*s/seg,t1=u0+(u1-u0)*(s+1)/seg,l=t1-t0+(isCity?0:e.w*.5);const g=new THREE.PlaneGeometry(e.w,l);g.rotateX(-Math.PI/2);const uv=g.attributes.uv;for(let i=0;i<uv.count;i++)uv.setY(i,uv.getY(i)*l/16);g.rotateY(Math.atan2(e.dx,e.dz));
       const mx=e.ax+e.dx*(t0+t1)/2,mz=e.az+e.dz*(t0+t1)/2;g.translate(mx,y,mz);addStatic(g,mat,false,true);
-      if(r.kind==='bridge'){const d=new THREE.BoxGeometry(e.w+1,1.2,l);d.rotateY(Math.atan2(e.dx,e.dz));d.translate(mx,-.55,mz);addStatic(d,M.concrete,false,true);}}}
+      if(r.kind==='bridge'){const d=BoxG(e.w+1,1.2,l);d.rotateY(Math.atan2(e.dx,e.dz));d.translate(mx,-.55,mz);addStatic(d,M.concrete,false,true);}}}
     if(r.kind!=='bridge')riverBridges(e,y);
     if(isCity)kerbsAndCrossings(e,y);}});}
 // City roads run straight across the whole grid, so kerbs and zebra crossings are placed block by block between junctions.
@@ -316,17 +378,17 @@ function kerbsAndCrossings(e,y){const zz=zoneAt((e.ax+e.bx)/2,(e.az+e.bz)/2,0);c
   const c0=Math.min(a0,a0+sgn*e.len),c1=Math.max(a0,a0+sgn*e.len);
   for(let n=Math.floor((c0-o0)/80);n*80+o0<c1;n++){const g0=o0+n*80,g1=g0+80;const s0=Math.max(g0,c0),s1=Math.min(g1,c1);const k0=s0+(s0===g0?trim:.5),k1=s1-(s1===g1?trim:.5);if(k1-k0<4)continue;
     const mid=(k0+k1)/2,l=k1-k0;const cx=vert?e.ax:mid,cz=vert?mid:e.az;
-    for(const sd of [-1,1]){const ox=e.dz*sd*(e.w/2+.15),oz=-e.dx*sd*(e.w/2+.15);let r0=-1;const put=(a,b)=>{if(b-a<1.5)return;const m=(a+b)/2;const k=new THREE.BoxGeometry(.3,.15,b-a);k.rotateY(ang);k.translate((vert?e.ax:m)+ox,.075,(vert?m:e.az)+oz);addStatic(k,M.kerb,false,true);};
+    for(const sd of [-1,1]){const ox=e.dz*sd*(e.w/2+.15),oz=-e.dx*sd*(e.w/2+.15);let r0=-1;const put=(a,b)=>{if(b-a<1.5)return;const m=(a+b)/2;const k=BoxG(.3,.15,b-a);k.rotateY(ang);k.translate((vert?e.ax:m)+ox,.075,(vert?m:e.az)+oz);addStatic(k,M.kerb,false,true);};
       for(let q=k0;q<=k1+.01;q+=1.5){const qq=Math.min(q,k1);const px=(vert?e.ax:qq)+ox,pz=(vert?qq:e.az)+oz;let blocked=false;for(const id of edgesNear(px,pz)){const f=EDGES[id];if(f===e)continue;if(segD(px,pz,f.ax,f.az,f.bx,f.bz)<f.w/2+.6){blocked=true;break;}}
         if(!blocked&&r0<0)r0=qq;if(blocked&&r0>=0){put(r0,qq-.4);r0=-1;}}if(r0>=0)put(r0,k1);}
     if(big)for(const [edge,at] of [[s0===g0,k0+1.2],[s1===g1,k1-1.2]]){if(!edge)continue;const zx=vert?e.ax:at,zz2=vert?at:e.az;const zg=new THREE.PlaneGeometry(e.w*.86,3);zg.rotateX(-Math.PI/2);zg.rotateY(ang);zg.translate(zx,y+.004,zz2);addStatic(zg,M.zebra,false,true);}}}
 // Where a road crosses a river or lake, add a concrete deck with side walls and pillars under it.
 function riverBridges(e,y){const st=6;let t0=-1;const ang=Math.atan2(e.dx,e.dz);const span=(a,b)=>{a=Math.max(0,a-10);b=Math.min(e.len,b+10);const l=b-a;if(l<8)return;const mx=e.ax+e.dx*(a+b)/2,mz=e.az+e.dz*(a+b)/2;
-    const d=new THREE.BoxGeometry(e.w+1.4,.9,l);d.rotateY(ang);d.translate(mx,y-.47,mz);addStatic(d,M.concrete,false,true);
-    for(const sd of [-1,1]){let r0=-1;const wall=(u0,u1)=>{if(u1-u0<1.5)return;const wl=new THREE.BoxGeometry(.35,.75,u1-u0);wl.rotateY(ang);const um=(u0+u1)/2;wl.translate(e.ax+e.dx*um+e.dz*sd*(e.w/2+.5),y+.36,e.az+e.dz*um-e.dx*sd*(e.w/2+.5));addStatic(wl,M.concrete,false,true);};
+    const d=BoxG(e.w+1.4,.9,l);d.rotateY(ang);d.translate(mx,y-.47,mz);addStatic(d,M.concrete,false,true);
+    for(const sd of [-1,1]){let r0=-1;const wall=(u0,u1)=>{if(u1-u0<1.5)return;const wl=BoxG(.35,.75,u1-u0);wl.rotateY(ang);const um=(u0+u1)/2;wl.translate(e.ax+e.dx*um+e.dz*sd*(e.w/2+.5),y+.36,e.az+e.dz*um-e.dx*sd*(e.w/2+.5));addStatic(wl,M.concrete,false,true);};
       for(let q=a;q<=b+.01;q+=1.5){const qq=Math.min(q,b);const px=e.ax+e.dx*qq+e.dz*sd*(e.w/2+.5),pz=e.az+e.dz*qq-e.dx*sd*(e.w/2+.5);let open=false;for(const id of edgesNear(px,pz)){const f=EDGES[id];if(f===e||f.road===e.road||f.fly)continue;if(segD(px,pz,f.ax,f.az,f.bx,f.bz)<f.w/2+1.2){open=true;break;}}
         if(!open&&r0<0)r0=qq;if(open&&r0>=0){wall(r0,qq-.6);r0=-1;}}if(r0>=0)wall(r0,b);}
-    for(let q=a+8;q<b-4;q+=28){const px=e.ax+e.dx*q,pz=e.az+e.dz*q;const pl=new THREE.BoxGeometry(e.w*.6,4,1.6);pl.rotateY(ang);pl.translate(px,y-2.8,pz);addStatic(pl,M.concrete,false,true);}};
+    for(let q=a+8;q<b-4;q+=28){const px=e.ax+e.dx*q,pz=e.az+e.dz*q;const pl=BoxG(e.w*.6,4,1.6);pl.rotateY(ang);pl.translate(px,y-2.8,pz);addStatic(pl,M.concrete,false,true);}};
   for(let t=0;t<=e.len;t+=st){const w=isWater(e.ax+e.dx*t,e.az+e.dz*t);if(w&&t0<0)t0=t;if(!w&&t0>=0){span(t0,t);t0=-1;}}if(t0>=0)span(t0,e.len);}
 roadRibbons();
 {const disc=new Map();for(const r of ROADS){if(r.fly||r.kind==='city'||r.kind==='service')continue;for(const p of r.pts){const k=Math.round(p[0]/3)+','+Math.round(p[1]/3);const w=r.w/2;if(!disc.has(k)||disc.get(k).w<w)disc.set(k,{x:p[0],z:p[1],w,m:r.kind==='coast'?M.road:M.hw,y:r.kind==='bridge'?.075:.031});}}
@@ -384,8 +446,8 @@ const poolTex=(()=>{const c=document.createElement('canvas');c.width=c.height=64
 const poolMat=new THREE.MeshBasicMaterial({map:poolTex,transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2});
 const LAMPS=[];
 function streetLamp(x,z,ax,az,h,arm,pool){const p=new THREE.CylinderGeometry(.1,.16,h,5);p.translate(x,h/2,z);addStatic(p,M.pole,false,false);
-  const ex=x+ax*arm,ez=z+az*arm;const a=new THREE.BoxGeometry(.12,.12,arm);a.rotateY(Math.atan2(ax,az));a.translate(x+ax*arm/2,h-.1,z+az*arm/2);addStatic(a,M.pole,false,false);
-  const hd=new THREE.BoxGeometry(.9,.18,.42);hd.rotateY(Math.atan2(ax,az)+Math.PI/2);hd.translate(ex,h-.22,ez);lampGeoms.push(hd);
+  const ex=x+ax*arm,ez=z+az*arm;const a=BoxG(.12,.12,arm);a.rotateY(Math.atan2(ax,az));a.translate(x+ax*arm/2,h-.1,z+az*arm/2);addStatic(a,M.pole,false,false);
+  const hd=BoxG(.9,.18,.42);hd.rotateY(Math.atan2(ax,az)+Math.PI/2);hd.translate(ex,h-.22,ez);lampGeoms.push(hd);
   const q=new THREE.PlaneGeometry(pool,pool);q.rotateX(-Math.PI/2);q.translate(ex,.07,ez);addStatic(q,poolMat,false,false);LAMPS.push([ex,ez]);}
 {const seen=new Set();const key=(x,z)=>Math.round(x/12)+','+Math.round(z/12);
   for(const e of EDGES){if(e.fly||e.road.fly)continue;const city=e.kind==='city',hw=!city&&e.kind!=='service';const step=city?30:44;const nx=e.dz,nz=-e.dx;
@@ -393,7 +455,7 @@ function streetLamp(x,z,ax,az,h,arm,pool){const p=new THREE.CylinderGeometry(.1,
       const x=e.ax+e.dx*t+nx*off*side,z=e.az+e.dz*t+nz*off*side;if(e.kind!=='bridge'&&isWater(x,z))continue;const k=key(x,z);if(seen.has(k))continue;seen.add(k);
       if(roadAt(x,z,-.5)&&e.kind!=='bridge')continue;   // a pole would stand on another road
       streetLamp(x,z,-nx*side,-nz*side,city?7.4:9.5,city?2.6:3.6,city?15:19);}}}
-for(const g of lampGeoms)addStatic(g,M.lamp,false,false);   // Beta v1.01.29: lamp heads go into the city chunks (drawn only near you)
+for(const g of lampGeoms)addStatic(g,M.lamp,false,false);   // Beta v1.01.30: lamp heads go into the city chunks (drawn only near you)
 
 /* free-standing landmarks */
 const lmPois=[];
@@ -414,18 +476,18 @@ function buildPlane(){const g=new THREE.Group();const add=(geo,m,x,y,z,rx,ry,rz)
   const prof=[[0,-12.6],[.9,-12],[1.6,-10.6],[2.1,-8],[2.25,-4],[2.25,6],[2.15,8.6],[1.85,10.6],[1.2,11.9],[.45,12.6],[0,12.8]];
   const fus=new THREE.LatheGeometry(prof.map(([r,z])=>new THREE.Vector2(r,z)),16);fus.rotateX(Math.PI/2);add(fus,M.plane,0,0,0);
   const dark=new THREE.MeshLambertMaterial({color:0x1f2a36}),stripe=M.planeTail,grey=M.steel;
-  add(new THREE.BoxGeometry(1.7,.38,.9),dark,0,.85,11.2,-.45);                                   // cockpit windscreen
-  for(const s of [-1,1]){const w=new THREE.BoxGeometry(.06,.26,17);w.translate(s*2.22,.55,.4);g.add(new THREE.Mesh(w,dark));    // cabin window row
-    for(const zz of [9.2,-9.4]){const d=new THREE.BoxGeometry(.07,1.3,.7);d.translate(s*2.23,.15,zz);g.add(new THREE.Mesh(d,new THREE.MeshLambertMaterial({color:0xd9dee4})));}
-    const st=new THREE.BoxGeometry(.05,.22,21);st.translate(s*2.24,-.25,0);g.add(new THREE.Mesh(st,stripe));}                    // cheatline
-  for(const s of [-1,1]){const wing=new THREE.BoxGeometry(14,.42,4.6);wing.translate(s*7.6,0,0);const m=add(wing,M.plane,0,-.9,1.4,0,s*.32,s*-.05);m.rotation.order='YXZ';
-    const wl=new THREE.BoxGeometry(.2,1.5,1.2);wl.translate(s*14.6,.6,-1.3);const wlm=new THREE.Mesh(wl,stripe);wlm.rotation.y=s*.32;wlm.position.set(0,-.9,1.4);g.add(wlm);
+  add(BoxG(1.7,.38,.9),dark,0,.85,11.2,-.45);                                   // cockpit windscreen
+  for(const s of [-1,1]){const w=BoxG(.06,.26,17);w.translate(s*2.22,.55,.4);g.add(new THREE.Mesh(w,dark));    // cabin window row
+    for(const zz of [9.2,-9.4]){const d=BoxG(.07,1.3,.7);d.translate(s*2.23,.15,zz);g.add(new THREE.Mesh(d,new THREE.MeshLambertMaterial({color:0xd9dee4})));}
+    const st=BoxG(.05,.22,21);st.translate(s*2.24,-.25,0);g.add(new THREE.Mesh(st,stripe));}                    // cheatline
+  for(const s of [-1,1]){const wing=BoxG(14,.42,4.6);wing.translate(s*7.6,0,0);const m=add(wing,M.plane,0,-.9,1.4,0,s*.32,s*-.05);m.rotation.order='YXZ';
+    const wl=BoxG(.2,1.5,1.2);wl.translate(s*14.6,.6,-1.3);const wlm=new THREE.Mesh(wl,stripe);wlm.rotation.y=s*.32;wlm.position.set(0,-.9,1.4);g.add(wlm);
     const en=new THREE.CylinderGeometry(.95,.8,3.4,14,1,true);en.rotateX(Math.PI/2);add(en,grey,s*6,-1.95,3.4).material.side=THREE.DoubleSide;
-    add(new THREE.CylinderGeometry(.75,.75,.1,14).rotateX(Math.PI/2),dark,s*6,-1.95,5);const fan=add(new THREE.BoxGeometry(1.4,.12,.05),grey,s*6,-1.95,4.95);g.userData.fans=(g.userData.fans||[]).concat(fan);
-    add(new THREE.BoxGeometry(.25,.9,1.2),grey,s*6,-1.2,3.3);                                         // pylon
-    const hs=new THREE.BoxGeometry(5,.3,2.2);hs.translate(s*2.6,0,0);const h=add(hs,M.plane,0,.4,-11,0,s*.35);}
-  const fin=new THREE.BoxGeometry(.4,5.2,3.6);fin.translate(0,2.6,0);add(fin,stripe,0,1.4,-10.6,-.42);                               // tail fin
-  add(new THREE.BoxGeometry(.42,.8,1.2),M.plane,0,5.4,-12.6,-.42);
+    add(new THREE.CylinderGeometry(.75,.75,.1,14).rotateX(Math.PI/2),dark,s*6,-1.95,5);const fan=add(BoxG(1.4,.12,.05),grey,s*6,-1.95,4.95);g.userData.fans=(g.userData.fans||[]).concat(fan);
+    add(BoxG(.25,.9,1.2),grey,s*6,-1.2,3.3);                                         // pylon
+    const hs=BoxG(5,.3,2.2);hs.translate(s*2.6,0,0);const h=add(hs,M.plane,0,.4,-11,0,s*.35);}
+  const fin=BoxG(.4,5.2,3.6);fin.translate(0,2.6,0);add(fin,stripe,0,1.4,-10.6,-.42);                               // tail fin
+  add(BoxG(.42,.8,1.2),M.plane,0,5.4,-12.6,-.42);
   for(const [x,z] of [[0,9],[-2.2,0],[2.2,0]]){add(new THREE.CylinderGeometry(.08,.08,1.6,5),grey,x,-2.6,z);for(const s of [-.22,.22])add(new THREE.CylinderGeometry(.42,.42,.3,10).rotateZ(Math.PI/2),dark,x+s,-3.4,z);}
   g.traverse(o=>{if(o.isMesh)o.castShadow=true;});return g;}
 const G0={cyl:new THREE.CylinderGeometry(1,1,1,10)};
@@ -436,7 +498,7 @@ const airportPlanes=[];
 const AIRLOOK={COK:{solar:true},BLR:{garden:true,roof:'#6f9a52'},BOM:{wide:1.4,roof:'#f4f1ea'},GOX:{roof:'#c75b3a'},GOI:{},TRV:{roof:'#c75b3a'},AMD:{},JAI:{roof:'#e8967a'},UDR:{roof:'#f4f1ea'}};
 const termGlass=LMat('#7fa6c4',{map:winTex,emissiveMap:litTex,emissive:0xffffff,emissiveIntensity:0});
 function curvedRoof(len,r,x,y,z,mat,flat){const g=new THREE.CylinderGeometry(r,r,len,16,1,true,0,Math.PI);g.rotateZ(Math.PI/2);g.rotateY(Math.PI/2);g.rotateY(Math.PI/2);g.scale(1,flat,1);g.translate(x,y,z);addStatic(g,mat);
-  const cap=new THREE.BoxGeometry(len+2,.4,r*2+2);cap.translate(x,y-.2,z);addStatic(cap,mat);}
+  const cap=BoxG(len+2,.4,r*2+2);cap.translate(x,y-.2,z);addStatic(cap,mat);}
 for(const a of W.airports){const s=a.side;const look=AIRLOOK[a.id]||{};const roofM=LMat(look.roof||'#e9e6df');
   box(a.L,.12,30,a.x,.05,a.z,M.runway,false,true);for(let t=-a.L/2+16;t<a.L/2-16;t+=18)box(8,.02,.8,a.x+t,.12,a.z,M.white,false,true);
   for(const e of [-1,1]){for(let k=0;k<6;k++)box(9,.02,1.4,a.x+e*(a.L/2-6),.12,a.z-10+k*4,M.white,false,true);box(3,.02,26,a.x+e*(a.L/2-14),.12,a.z,M.white,false,true);
@@ -448,13 +510,13 @@ for(const a of W.airports){const s=a.side;const look=AIRLOOK[a.id]||{};const roo
   box(TW,9,16,a.x,4.5,a.z+s*48,termGlass);curvedRoof(TW+4,10.5,a.x,9,a.z+s*48,roofM,.42);box(TW*.8,.5,8,a.x,6,a.z+s*60,roofM);for(let t=-TW*.38;t<=TW*.38;t+=TW*.19)box(.5,6,.5,a.x+t,3,a.z+s*63,M.steel);
   addSign(a.name.toUpperCase(),a.x,8,a.z+s*56.3,s>0?0:Math.PI,Math.min(40,TW*.4),2.4,'#ffffff','#1b3a6b');
   // jet bridges and parked planes at the gates
-  const gates=[-TW*.3,0,TW*.3];for(const gx of gates){const jb=new THREE.BoxGeometry(2.6,2.6,12);jb.translate(a.x+gx,4,a.z+s*34);addStatic(jb,M.concrete);const rot=new THREE.CylinderGeometry(2,2,3.2,10);rot.translate(a.x+gx,3.4,a.z+s*28);addStatic(rot,M.concrete);box(.6,3,.6,a.x+gx,1.5,a.z+s*28,M.steel);}
+  const gates=[-TW*.3,0,TW*.3];for(const gx of gates){const jb=BoxG(2.6,2.6,12);jb.translate(a.x+gx,4,a.z+s*34);addStatic(jb,M.concrete);const rot=new THREE.CylinderGeometry(2,2,3.2,10);rot.translate(a.x+gx,3.4,a.z+s*28);addStatic(rot,M.concrete);box(.6,3,.6,a.x+gx,1.5,a.z+s*28,M.steel);}
   for(const gx of gates.slice(0,2)){const pp=buildPlane();pp.position.set(a.x+gx+TW*.15,2.6,a.z+s*24);pp.rotation.y=s>0?Math.PI:0;scene.add(pp);}
   // control tower and hangar
   const tx=a.x+TW/2+22,tz=a.z+s*44;{const g=new THREE.CylinderGeometry(1.8,2.4,28,10);g.translate(tx,14,tz);addStatic(g,M.concrete);const cab=new THREE.CylinderGeometry(4.6,3.8,3.4,8);cab.translate(tx,29.6,tz);addStatic(cab,M.glassBox);const rf=new THREE.CylinderGeometry(5,5,.6,8);rf.translate(tx,31.6,tz);addStatic(rf,M.white);box(.2,4,.2,tx,34,tz,M.steel);}
   addCol(tx,tz,3,3);const hx=a.x-TW/2-34,hz=a.z+s*40;box(34,9,24,hx,4.5,hz,M.roofTin);curvedRoof(34,12,hx,9,hz,M.roofTin,.35);box(24,8,.3,hx,4,hz-s*12.2,M.dark);addCol(hx,hz,17,12);
   addCol(a.x,a.z+s*48,TW/2,8);
-  if(look.solar){const sol=LMat('#1f3a6b');for(let r=0;r<6;r++)for(let k=0;k<10;k++){const g=new THREE.BoxGeometry(9,.2,3.2);g.rotateX(-.4*s);g.translate(a.x-a.L/2+20+k*11,1,a.z-s*(32+r*6));addStatic(g,sol,false,true);}addSign('SOLAR POWERED AIRPORT',a.x-a.L/2+70,3,a.z-s*70,s>0?Math.PI:0,20,2,'#ffffff','#1f6f4a');}
+  if(look.solar){const sol=LMat('#1f3a6b');for(let r=0;r<6;r++)for(let k=0;k<10;k++){const g=BoxG(9,.2,3.2);g.rotateX(-.4*s);g.translate(a.x-a.L/2+20+k*11,1,a.z-s*(32+r*6));addStatic(g,sol,false,true);}addSign('SOLAR POWERED AIRPORT',a.x-a.L/2+70,3,a.z-s*70,s>0?Math.PI:0,20,2,'#ffffff','#1f6f4a');}
   if(look.garden){for(let k=0;k<26;k++)tree(a.x-TW/2+k*(TW/25),a.z+s*(70+(k%3)*4),1.1,M.treeDark);box(TW,.1,10,a.x,.06,a.z+s*72,M.grass,false,true);}
   const pl=buildPlane();pl.position.set(a.x-30,2.6,a.z+s*34);pl.rotation.y=Math.PI/2;scene.add(pl);const fly=buildPlane();fly.visible=false;scene.add(fly);airportPlanes.push({a,fly,t:-1,next:MR(10,40)});
   lmPois.push({type:'airport',name:a.name,x:a.x,z:a.z+s*64,rot:s>0?0:Math.PI,extra:a.id});}
@@ -462,6 +524,8 @@ for(const a of W.airports){const s=a.side;const look=AIRLOOK[a.id]||{};const roo
 /* hills, dunes, forests */
 function freeSpot(x,z,r){return !roadAt(x,z,r)&&!isWater(x,z)&&!zoneAt(x,z,r)&&!colliders.slice(-1).length||(!roadAt(x,z,r)&&!isWater(x,z)&&!zoneAt(x,z,r));}
 const hillMats=[LMat('#6f7f45'),LMat('#7d8a4c'),LMat('#8a7a5a'),LMat('#5f7340')];
+// Beta v2.00.00: Himalayan ranges: kind 'snow' (green-grey slopes with a snow cap), 'rock' (the bare Ladakh and Spiti mountains), 'pine' (dark forested hills)
+const HMAT={snow:[LMat('#6b6f5e'),LMat('#5f6b55'),LMat('#77766a')],rock:[LMat('#9a7f66'),LMat('#8a6f60'),LMat('#a58b6e'),LMat('#7d6a5c')],pine:[LMat('#3f5e36'),LMat('#486a3c'),LMat('#3a5532')]},snowMat=LMat('#f3f6f9');
 const HILLS_TRY=[];window.__HILLS=HILLS_TRY;
 // A hill only goes where its whole base is clear: no road within its radius, no city, airport, famous place or water under it.
 function hillClear(x,z,rad){if(zoneAt(x,z,rad+30)||isWater(x,z))return false;
@@ -469,23 +533,26 @@ function hillClear(x,z,rad){if(zoneAt(x,z,rad+30)||isWater(x,z))return false;
   for(const a of W.airports)if(Math.hypot(x-a.x,z-a.z)<a.L/2+rad+60)return false;
   for(const pl of W.places)if(Math.hypot(x-pl[1],z-pl[2])<rad+50)return false;
   let wet=0;for(let i=0;i<8;i++){const an=i*.785;if(isWater(x+Math.cos(an)*rad*.85,z+Math.sin(an)*rad*.85))wet++;}return wet<2;}
-for(const h of W.hills){for(let i=0;i<h.n;i++){const a=rnd()*6.283,rr=Math.sqrt(rnd());const x=h.x+Math.cos(a)*h.rx*rr,z=h.z+Math.sin(a)*h.rz*rr;const H=R(h.h[0],h.h[1]),rad=H*R(1.2,1.8);
+for(const h of W.hills){for(let i=0;i<h.n;i++){const a=rnd()*6.283,rr=Math.sqrt(rnd());const x=h.x+Math.cos(a)*h.rx*rr,z=h.z+Math.sin(a)*h.rz*rr;const H=R(h.h[0],h.h[1]),rad=H*(h.steep?R(h.steep[0],h.steep[1]):R(1.2,1.8));
   HILLS_TRY.push({x,z,rad,H,ok:hillClear(x,z,rad)});if(!HILLS_TRY[HILLS_TRY.length-1].ok)continue;const g=new THREE.ConeGeometry(rad,H,7,1);g.translate(x,H/2-.5,z);
-  lmCollect=[];addStatic(g,pick(hillMats));const l=lmCollect;lmCollect=null;flushFar(l,x,z);addCol(x,z,rad*.55,rad*.55);}}
+  lmCollect=[];addStatic(g,pick(HMAT[h.kind]||hillMats));if((h.kind==='snow'||h.kind==='rock'&&H>h.h[0]+(h.h[1]-h.h[0])*.5)&&H>60){const cf=h.kind==='snow'?.42:.22;const c=new THREE.ConeGeometry(rad*cf*1.02,H*cf,7,1);c.translate(x,H-H*cf/2-.5+.05,z);addStatic(c,snowMat);}const l=lmCollect;lmCollect=null;flushFar(l,x,z);addCol(x,z,rad*.55,rad*.55);}}
 const duneMat=LMat('#d9b676');
 for(const d of W.dunes){for(let i=0;i<d.n;i++){const a=rnd()*6.283,rr=Math.sqrt(rnd());const x=d.x+Math.cos(a)*d.rx*rr,z=d.z+Math.sin(a)*d.rz*rr;const s=R(8,22);if(roadAt(x,z,s+4)||zoneAt(x,z,s))continue;
   const g=new THREE.SphereGeometry(1,10,6,0,Math.PI*2,0,Math.PI/2);g.scale(s*R(1.4,2.4),s*R(.25,.45),s);g.rotateY(R(0,3));g.translate(x,-.2,z);addStatic(g,duneMat,false,true);}}
 for(const f of W.forests){const mat=f.kind==='dry'?M.treeDry:M.treeDark;for(let i=0;i<f.n;i++){const a=rnd()*6.283,rr=Math.sqrt(rnd());const x=f.x+Math.cos(a)*f.rx*rr,z=f.z+Math.sin(a)*f.rz*rr;if(roadAt(x,z,3)||zoneAt(x,z)||isWater(x,z))continue;tree(x,z,R(.8,1.4),mat);}}
 for(const g of W.palms||[]){for(let i=0;i<g.n;i++){const a=rnd()*6.283,rr=Math.sqrt(rnd());const x=g.x+Math.cos(a)*g.rx*rr,z=g.z+Math.sin(a)*g.rz*rr;if(isWater(x,z)||roadAt(x,z,4)||zoneAt(x,z,6))continue;palm(x,z);}}
-for(let i=0,nT=Math.round(2600*W.H/11000);i<nT;i++){const x=R(50,W.W-50),z=R(50,W.H-50);if(isWater(x,z)||roadAt(x,z,4)||zoneAt(x,z,10))continue;let skip=false;for(const b of W.biomes)if((b.kind==='desert'||b.kind==='rann')&&inE(b,x,z)<1){skip=rnd()<.85;break;}if(skip)continue;tree(x,z,R(.7,1.2));}
-for(let i=0;i<14;i++){const bx=R(2350,2470),bz=R(8150,8900),ry=R(0,3);if(isLand(bx,bz))continue;const g=new THREE.BoxGeometry(2.2,1,7);g.rotateY(ry);g.translate(bx,-0.3,bz);addStatic(g,i%2?M.boat:M.boat2);(window.IB_BOATS=window.IB_BOATS||[]).push({x:bx,z:bz,ry,kind:'fish',y:.2});const c=new THREE.BoxGeometry(1.6,1.2,2);c.rotateY(ry);c.translate(bx,0.6,bz);addStatic(c,M.cream);}
+for(let i=0,nT=Math.round(2600*(W.H-Z0)/11000);i<nT;i++){const x=R(50,W.W-50),z=R(Z0+50,W.H-50);if(isWater(x,z)||roadAt(x,z,4)||zoneAt(x,z,10))continue;let skip=isForeign(x,z)&&rnd()<.7;if(!skip)for(const b of W.biomes)if((b.kind==='desert'||b.kind==='rann'||b.kind==='colddesert'||b.kind==='snow'||b.kind==='mine')&&inE(b,x,z)<1){skip=rnd()<(b.kind==='desert'||b.kind==='rann'?.85:.97);break;}if(skip)continue;tree(x,z,R(.7,1.2));}
+// Beta v2.00.00: the border fence (Pakistan, the LoC and LAC, Nepal): posts every 10 m and two wires
+if(W.borderLine){const fm=LMat('#5d6066');const P=W.borderLine;for(let k=0;k<P.length-1;k++){const [ax,az]=P[k],[bx,bz]=P[k+1];const L=Math.hypot(bx-ax,bz-az);if(L<1)continue;const dx=(bx-ax)/L,dz=(bz-az)/L,ang=Math.atan2(dx,dz);
+  for(let t=0;t<L;t+=10){const x=ax+dx*t,z=az+dz*t;box(.16,2.6,.16,x,1.3,z,fm,false,false);}for(let t=0;t<L;t+=120){const l=Math.min(120,L-t),mx=ax+dx*(t+l/2),mz=az+dz*(t+l/2);for(const y of [1.1,2.3])boxRot(.05,.06,l,mx,y,mz,ang,fm,false,false);}}}
+for(let i=0;i<14;i++){const bx=R(2350,2470),bz=R(8150,8900),ry=R(0,3);if(isLand(bx,bz))continue;const g=BoxG(2.2,1,7);g.rotateY(ry);g.translate(bx,-0.3,bz);addStatic(g,i%2?M.boat:M.boat2);(window.IB_BOATS=window.IB_BOATS||[]).push({x:bx,z:bz,ry,kind:'fish',y:.2});const c=BoxG(1.6,1.2,2);c.rotateY(ry);c.translate(bx,0.6,bz);addStatic(c,M.cream);}
 
 /* highway stops: pump, dhaba and toilet every ~1.7 km */
 const hwStops=[];
 for(const r of ROADS){if(r.kind!=='hw'&&r.kind!=='exp')continue;let acc=0;const total=r.edges.reduce((a,e)=>a+e.len,0);if(total<1300)continue;let next=650;
   for(const e of r.edges){while(next<acc+e.len){const t=next-acc;const x=e.ax+e.dx*t,z=e.az+e.dz*t;const nx=e.dz,nz=-e.dx;const sx=x+nx*(e.w/2+12),sz=z+nz*(e.w/2+12);
       if(!isWater(sx,sz)&&!zoneAt(sx,sz,30)){const ang=Math.atan2(e.dx,e.dz);boxRot(22,.25,16,sx,.12,sz,ang,M.pave,false,true);boxRot(14,.5,8,sx,5.2,sz-0,ang,M.canopy);
-        for(const k of [-4,4]){const g=new THREE.BoxGeometry(.6,4.8,.6);g.rotateY(ang);g.translate(sx+e.dx*k,2.6,sz+e.dz*k);addStatic(g,M.pole);}
+        for(const k of [-4,4]){const g=BoxG(.6,4.8,.6);g.rotateY(ang);g.translate(sx+e.dx*k,2.6,sz+e.dz*k);addStatic(g,M.pole);}
         const hx=sx+nx*9,hz=sz+nz*9;boxRot(12,4,7,hx,2,hz,ang,M.kiosk);boxRot(13,.4,8,hx,4.2,hz,ang,M.awn[0]);addCol(hx,hz,5,5);
         const px=x+nx*(e.w/2+3),pz=z+nz*(e.w/2+3);hwStops.push({x:px,z:pz,rot:ang,road:r.name});
         lmPois.push({type:'pump',name:'Highway fuel',x:px,z:pz,rot:ang,drive:true},{type:'food',name:'Highway dhaba',x:px+e.dx*9,z:pz+e.dz*9,rot:ang,extra:'HW'},{type:'lodge',name:'Highway motel',x:px-e.dx*9,z:pz-e.dz*9,rot:ang});}
@@ -1241,9 +1308,14 @@ const FAUNA=[{kind:'lion',x:1800,z:5780,rx:330,rz:200,n:5},{kind:'lioness',x:180
   {kind:'tiger',x:6000,z:2150,rx:260,rz:170,n:4},{kind:'deer',x:6000,z:2150,rx:260,rz:170,n:6},{kind:'peacock',x:6020,z:2120,rx:200,rz:140,n:4},
   {kind:'camel',x:1030,z:1310,rx:160,rz:140,n:7},{kind:'camel',x:4220,z:1860,rx:90,rz:70,n:4},{kind:'peacock',x:4220,z:1860,rx:90,rz:70,n:3}];
 const STRAYS={def:[['cow',36],['dog',30],['goat',14],['buffalo',12],['monkey',5],['peacock',3]],RJ:[['cow',30],['camel',20],['dog',20],['goat',14],['peacock',8],['monkey',8]],GJ:[['cow',34],['buffalo',16],['dog',24],['goat',12],['camel',8],['peacock',6]],
-  KL:[['dog',34],['cow',22],['goat',20],['buffalo',8],['monkey',12],['elephant',4]],GA:[['dog',38],['cow',26],['buffalo',16],['goat',12],['monkey',8]],KA:[['cow',32],['dog',28],['buffalo',14],['goat',12],['monkey',10],['elephant',4]],LD:[['goat',55],['cow',35],['buffalo',10]],mumbai:[['dog',70],['goat',15],['cow',10],['monkey',5]]};
+  KL:[['dog',34],['cow',22],['goat',20],['buffalo',8],['monkey',12],['elephant',4]],GA:[['dog',38],['cow',26],['buffalo',16],['goat',12],['monkey',8]],KA:[['cow',32],['dog',28],['buffalo',14],['goat',12],['monkey',10],['elephant',4]],LD:[['goat',55],['cow',35],['buffalo',10]],TN:[['dog',34],['cow',28],['goat',16],['buffalo',10],['monkey',8],['peacock',4]],PY:[['dog',40],['cow',30],['goat',20],['buffalo',10]],AP:[['cow',30],['buffalo',22],['dog',24],['goat',14],['monkey',6],['peacock',4]],TG:[['buffalo',20],['cow',26],['dog',24],['goat',16],['monkey',10],['peacock',4]],mumbai:[['dog',70],['goat',15],['cow',10],['monkey',5]],
+  DL:[['dog',34],['cow',30],['monkey',16],['goat',10],['buffalo',10]],HR:[['buffalo',30],['cow',26],['dog',22],['goat',12],['camel',6],['peacock',4]],PB:[['buffalo',30],['cow',26],['dog',24],['goat',12],['peacock',8]],
+  CH:[['dog',50],['cow',30],['monkey',20]],HP:[['dog',30],['goat',30],['cow',20],['monkey',20]],UK:[['dog',28],['cow',24],['goat',24],['monkey',24]],JK:[['dog',38],['goat',30],['cow',22],['monkey',10]],
+  LA:[['dog',50],['goat',40],['cow',10]],UP:[['cow',32],['buffalo',20],['dog',24],['goat',12],['monkey',12]],MP:[['cow',30],['buffalo',18],['dog',24],['goat',16],['monkey',8],['peacock',4]],
+  CG:[['cow',30],['buffalo',20],['dog',26],['goat',18],['peacock',6]],OD:[['cow',34],['dog',28],['goat',16],['buffalo',14],['monkey',8]]};
 // forest zones where wild elephants, deer and monkeys can cross the highway
-const FOREST=['thekkady','munnar','kalpetta','madikeri','mollem','chikkamagaluru','sasangir','ranthambore','mountabu'];
+const FOREST=['thekkady','munnar','kalpetta','madikeri','mollem','chikkamagaluru','sasangir','ranthambore','mountabu','ooty','valparai','kodaikanal','araku','srisailam',
+  'ramnagar','mandla','umaria','seoni','pachmarhi','dudhwa','sheopur','panna','baripada','daringbadi','kanker','rishikesh','kondagaon','mainpat'];
 const STRAY_SIZE={cow:.9,buffalo:1,goat:.45,dog:.4,camel:1,monkey:.35,peacock:.4,elephant:1.6,deer:.6};
 function addFauna(f){for(let i=0;i<f.n;i++){const g=buildAnimal(f.kind,{male:f.kind==='deer'?i%2===0:undefined});g.visible=false;scene.add(g);animals.push({g,kind:f.kind,area:f,x:f.x+MR(-.6,.6)*f.rx,z:f.z+MR(-.6,.6)*f.rz,h:MR(0,6.28),sp:0,t:0,hp:100,state:'ok'});}}
 for(const f of FAUNA)addFauna(f);
@@ -1361,7 +1433,7 @@ const sunDir=new THREE.Vector3();
 function updSun(c){const a=(clockH-6)/12*Math.PI;const day=clockH>5.5&&clockH<19.5;if(day)sunDir.set(Math.cos(a),Math.max(Math.sin(a),.12),.35).normalize();else sunDir.set(-.3,.8,.5).normalize();sun.position.copy(c).addScaledVector(sunDir,220);sun.target.position.copy(c);}
 
 /* ================= festivals, events, fares ================= */
-const stateAt=(x,z)=>{const zz=zoneAt(x,z,60);if(zz)return zz.st;for(const sp of W.statePolys||[])if(pip(x,z,sp.pts))return sp.st;if(z<3000)return 'RJ';if(z<3550&&x>2400)return 'RJ';if(z<7000&&x<5200)return 'GJ';return 'MH';};
+const stateAt=(x,z)=>{const zz=zoneAt(x,z,60);if(zz)return zz.st;if(isForeign(x,z))return 'FR';for(const sp of W.statePolys||[])if(pip(x,z,sp.pts))return sp.st;if(z<3000)return 'RJ';if(z<3550&&x>2400)return 'RJ';if(z<7000&&x<5200)return 'GJ';return 'MH';};
 function activeFestivals(st){const iso=istISO();return CFG.festivals.filter(f=>f.start&&f.end&&f.start<=iso&&f.end>=iso&&(()=>{const ws=String(f.where||'all').split(',').map(s=>s.trim());return ws.includes('all')||ws.includes(st);})());}
 function activeEvents(){const iso=istISO();return CFG.events.filter(e=>e.start<=iso&&e.end>=iso);}
 function fareMultAt(x,z){let m=CFG.fareMul;const st=stateAt(x,z);for(const f of activeFestivals(st))m*=+f.mult||1;const zz=zoneAt(x,z,60);for(const e of activeEvents())if(zz&&e.zone===zz.id)m*=+e.mult||1;return m;}
@@ -1854,7 +1926,7 @@ function evalMission(){let best={pri:-1};const add=m=>{if(m&&m.pri>best.pri)best
   if(player.stars>0)add({pri:90,cls:'wanted',k:`Wanted · ${player.stars} star${player.stars>1?'s':''}`,t:player.arrestT>.3?'Police are arresting you · move!':'Lose the police',m:'Stay away from jeeps, hide at home, or pay at a police station'});
   for(const f of missions){try{add(f(api));}catch(e){console.error(e);}}
   const need=[['hunger','You are hungry','Orange markers sell food'],['energy','You are tired','Sleep at home, a lodge or a dharamshala']].find(([k])=>P[k]<30);if(need)add({pri:15,k:'Needs',t:need[1],m:need[2]});
-  add({pri:0,k:areaName(),t:'Explore West India',m:'Phone → Jobs for work · tap the minimap for the India map'});return best;}
+  add({pri:0,k:areaName(),t:'Explore India',m:'Phone → Jobs for work · tap the minimap for the India map'});return best;}
 let missionKey='',missionHide=0;
 function showMission(m){const el=$('#mission');const key=m.k+'|'+m.t;if(key!==missionKey){missionKey=key;missionHide=performance.now()+5000;}el.className='pill'+(m.cls?' '+m.cls:'')+(performance.now()<missionHide?' show':'');el.innerHTML=`<div class="k">${esc(m.k)}</div><div class="t">${esc(m.t)}</div><div class="m">${esc(m.m||'')}</div>`;
   const tg=m.target;if(tg&&!inside){marker.visible=true;marker.position.set(tg.x,0,tg.z);const c=tg.col||0x3ddc97;beamMat.color.setHex(c);mRingMat.color.setHex(c);arrowMat.color.setHex(c);}else marker.visible=false;}
@@ -2097,7 +2169,7 @@ function updFoot(dt,bounds){if(player.knock>0){player.knock-=dt;avatar.position.
   const st=(keys.left?1:0)-(keys.right?1:0);player.h+=st*3*dt;let nx=player.pos.x+Math.sin(player.h)*player.v*dt,nz=player.pos.z+Math.cos(player.h)*player.v*dt;
   if(!bounds){const feet=player.pos.y||0,gN=groundAt(nx,nz,feet);if(gN.block){nx=player.pos.x;nz=player.pos.z;player.v*=.3;if(gN.msg&&performance.now()-(gN.p._m||0)>2500){gN.p._m=performance.now();toast(gN.msg,'#ffc93c');}}}
   if(bounds){player.pos.x=clamp(nx,-bounds.w/2+.4,bounds.w/2-.4);player.pos.z=clamp(nz,-bounds.d/2+.4,bounds.d/2-.3);const vb=inside&&inside.venue&&inside.venue.blk;if(vb)for(const r of vb){const q=player.pos;if(q.x>r[0]-.35&&q.x<r[2]+.35&&q.z>r[1]-.35&&q.z<r[3]+.35){const dl=q.x-r[0]+.35,dr=r[2]+.35-q.x,du=q.z-r[1]+.35,dd=r[3]+.35-q.z,m=Math.min(dl,dr,du,dd);if(m===dl)q.x=r[0]-.35;else if(m===dr)q.x=r[2]+.35;else if(m===du)q.z=r[1]-.35;else q.z=r[3]+.35;}}}
-  else{const wN=wetAt(nx,nz);if(drivable(nx,nz)||wN&&nx>2&&nz>2&&nx<W.W-2&&nz<W.H-2){player.pos.x=nx;player.pos.z=nz;}if((player.pos.y||0)<.8)collide(player.pos,.4,true);for(const o of vehicles){if(Math.abs(o.pos.x-player.pos.x)>8||Math.abs(o.pos.z-player.pos.z)>8)continue;const s=segDist(player.pos.x,player.pos.z,o);const min=o.spec.wid/2+.4;if(s.d<min&&s.d>.001){const k=(min-s.d)/s.d;player.pos.x+=s.dx*k;player.pos.z+=s.dz*k;}}}
+  else{const wN=wetAt(nx,nz);if(drivable(nx,nz)||wN&&nx>2&&nz>Z0+2&&nx<W.W-2&&nz<W.H-2){player.pos.x=nx;player.pos.z=nz;}if((player.pos.y||0)<.8)collide(player.pos,.4,true);for(const o of vehicles){if(Math.abs(o.pos.x-player.pos.x)>8||Math.abs(o.pos.z-player.pos.z)>8)continue;const s=segDist(player.pos.x,player.pos.z,o);const min=o.spec.wid/2+.4;if(s.d<min&&s.d>.001){const k=(min-s.d)/s.d;player.pos.x+=s.dx*k;player.pos.z+=s.dz*k;}}}
   player.anim=Math.max(0,player.anim-dt);const ph=performance.now()/1000*(player.run?13:9),sw=Math.min(1,Math.abs(player.v)/4)*.7;
   AU.legs[0].rotation.z=AU.legs[1].rotation.z=0;AU.legs[0].rotation.x=Math.sin(ph)*sw;AU.legs[1].rotation.x=-Math.sin(ph)*sw;AU.arms[0].rotation.x=-Math.sin(ph)*sw;AU.arms[1].rotation.x=player.anim>0?-1.5:(P.weapon==='fist'?Math.sin(ph)*sw:-.5);
   if(!bounds){const fl=groundAt(player.pos.x,player.pos.z,player.pos.y||0).y;player.vy=(player.vy||0)-15*dt;let y=(player.pos.y||0)+player.vy*dt;if(y<=fl){if(player.vy<-7)player.shake=Math.min(.3,-player.vy*.02);y=fl;player.vy=0;}player.pos.y=y;}else{player.pos.y=0;player.vy=0;}
@@ -2237,10 +2309,10 @@ function updHud(){hudSet('money',P.cash+'|'+P.bank,()=>{$('#money').innerHTML=`$
   const vb=$('#vbars');if(drv){const v=player.veh;hudSet('vb',[1,v.spec.fuel?Math.round(v.fuel):100,!!v.spec.fuel,Math.round(v.hp)].join(),()=>{vb.hidden=false;$('#fuelBar i').style.width=(v.spec.fuel?v.fuel:100)+'%';$('#fuelBar').classList.toggle('low',v.spec.fuel&&v.fuel<15);$('#fuelBar').style.opacity=v.spec.fuel?1:.35;$('#bodyBar i').style.width=v.hp+'%';$('#bodyBar').classList.toggle('low',v.hp<30);});}else hudSet('vb','0',()=>{vb.hidden=true;});
   hudSet('cross',camMode===2&&player.mode==='foot'?'block':'none',v=>{$('#cross').style.display=v;});const hb=$('.pad.a [data-act=horn]');if(hb){const t=player.mode==='foot'?'JUMP':'HORN';if(hb.textContent!==t)hb.textContent=t;}}
 /* pre-rendered world map, 1 px = 8 m */
-const MAPS=8;const mapCanvas=document.createElement('canvas');mapCanvas.width=Math.ceil(W.W/MAPS);mapCanvas.height=Math.ceil(W.H/MAPS);
-{const mx=mapCanvas.getContext('2d');const lo=document.createElement('canvas');lo.width=Math.ceil(W.W/16);lo.height=Math.ceil(W.H/16);const lx=lo.getContext('2d');const img=lx.createImageData(lo.width,lo.height);
-  for(let j=0;j<lo.height;j++)for(let i=0;i<lo.width;i++){const x=i*16+8,z=j*16+8;let c;if(isWater(x,z)&&!roadAt(x,z))c=cA.set('#2a6f97');else c=biomeColor(x,z,cA);const o=(j*lo.width+i)*4;img.data[o]=c.r*255;img.data[o+1]=c.g*255;img.data[o+2]=c.b*255;img.data[o+3]=255;}
-  lx.putImageData(img,0,0);mx.imageSmoothingEnabled=true;mx.drawImage(lo,0,0,mapCanvas.width,mapCanvas.height);
+const MAPS=8;const mapCanvas=document.createElement('canvas');mapCanvas.width=Math.ceil(W.W/MAPS);mapCanvas.height=Math.ceil((W.H-Z0)/MAPS);
+{const mx=mapCanvas.getContext('2d');const lo=document.createElement('canvas');lo.width=Math.ceil(W.W/24);lo.height=Math.ceil((W.H-Z0)/24);const lx=lo.getContext('2d');const img=lx.createImageData(lo.width,lo.height);
+  for(let j=0;j<lo.height;j++)for(let i=0;i<lo.width;i++){const x=i*24+12,z=Z0+j*24+12;let c;if(isWater(x,z)&&!roadAt(x,z))c=cA.set('#2a6f97');else c=biomeColor(x,z,cA);const o=(j*lo.width+i)*4;img.data[o]=c.r*255;img.data[o+1]=c.g*255;img.data[o+2]=c.b*255;img.data[o+3]=255;}
+  lx.putImageData(img,0,0);mx.imageSmoothingEnabled=true;mx.drawImage(lo,0,0,mapCanvas.width,mapCanvas.height);mx.translate(0,-Z0/MAPS);
   for(const z of W.zones){mx.fillStyle='rgba(70,64,84,.55)';mx.fillRect(z.x0/MAPS,z.z0/MAPS,z.nx*80/MAPS,z.nz*80/MAPS);}
   mx.lineCap='round';for(const r of ROADS){mx.strokeStyle=r.kind==='city'?'#a8a2b8':r.kind==='exp'?'#ffd36a':'#e8e0cc';mx.lineWidth=r.kind==='city'?1.4:2.4;mx.beginPath();r.pts.forEach(([x,z],i)=>i?mx.lineTo(x/MAPS,z/MAPS):mx.moveTo(x/MAPS,z/MAPS));mx.stroke();}
   for(const a of W.airports){mx.fillStyle='#2e2f33';mx.fillRect((a.x-a.L/2)/MAPS,(a.z-15)/MAPS,a.L/MAPS,30/MAPS);}}
@@ -2252,7 +2324,7 @@ let miniZoom=clamp(+store.get('ib.miniZoom')||1,.4,3),navOn=false;
 function setMiniZoom(f){miniZoom=clamp(miniZoom*f,.4,3);store.set('ib.miniZoom',miniZoom);toast(`Map zoom ×${miniZoom.toFixed(1)}`,'#5fb4ff');}
 function drawMini(now){const Wd=224,p0=ppos(),h=player.mode==='drive'&&player.veh?player.veh.h:player.h;const spd=player.mode==='drive'&&player.veh?Math.abs(player.veh.v):0;const radius=(nav.route?(spd>18?520:spd>9?340:220):(spd>18?700:spd>9?450:300))/miniZoom;const ppm=(Wd/2)/radius;
   if(!!nav.route!==navOn){navOn=!!nav.route;document.body.classList.toggle('navon',navOn);}const ahead=navOn?.38:0;const pp={x:p0.x+Math.sin(h)*radius*ahead,z:p0.z+Math.cos(h)*radius*ahead};
-  mc.save();mc.fillStyle='#2a6f97';mc.fillRect(0,0,Wd,Wd);mc.translate(Wd/2,Wd/2);mc.rotate(Math.PI+h);mc.scale(ppm*MAPS,ppm*MAPS);mc.drawImage(mapCanvas,-pp.x/MAPS,-pp.z/MAPS);mc.restore();
+  mc.save();mc.fillStyle='#2a6f97';mc.fillRect(0,0,Wd,Wd);mc.translate(Wd/2,Wd/2);mc.rotate(Math.PI+h);mc.scale(ppm*MAPS,ppm*MAPS);mc.drawImage(mapCanvas,-pp.x/MAPS,(Z0-pp.z)/MAPS);mc.restore();
   mc.save();mc.translate(Wd/2,Wd/2);mc.rotate(Math.PI+h);for(const e of EDGES){const c=CONG[e.id];if(c<.42)continue;if(Math.max(e.ax,e.bx)<pp.x-radius||Math.min(e.ax,e.bx)>pp.x+radius||Math.max(e.az,e.bz)<pp.z-radius||Math.min(e.az,e.bz)>pp.z+radius)continue;mc.strokeStyle=c>.7?'#e8473a':'#ff9f1c';mc.lineWidth=Math.max(2.5,e.w*ppm*.6);mc.lineCap='round';mc.beginPath();mc.moveTo((e.ax-pp.x)*ppm,(e.az-pp.z)*ppm);mc.lineTo((e.bx-pp.x)*ppm,(e.bz-pp.z)*ppm);mc.stroke();}if(nav.route){mc.lineJoin=mc.lineCap='round';const R=nav.route,C=nav.cong||[];mc.strokeStyle='#ffffff';mc.lineWidth=11;mc.beginPath();R.forEach(([x,z],i)=>{const X=(x-pp.x)*ppm,Z=(z-pp.z)*ppm;i?mc.lineTo(X,Z):mc.moveTo(X,Z);});mc.stroke();mc.lineWidth=6.5;for(let i=0;i<R.length-1;i++){mc.strokeStyle=(C[i]||0)>.6?'#e8473a':'#2f7bff';mc.beginPath();mc.moveTo((R[i][0]-pp.x)*ppm,(R[i][1]-pp.z)*ppm);mc.lineTo((R[i+1][0]-pp.x)*ppm,(R[i+1][1]-pp.z)*ppm);mc.stroke();}}mc.font='13px "Baloo 2", sans-serif';mc.textAlign='center';mc.textBaseline='middle';
   const icon=(x,z,col,txt,rr=7,clampIt)=>{let dx=(x-pp.x)*ppm,dz=(z-pp.z)*ppm;const d=Math.hypot(dx,dz),lim=Wd/2-10;if(d>lim){if(!clampIt)return;dx*=lim/d;dz*=lim/d;}mc.save();mc.translate(dx,dz);mc.rotate(-Math.PI-h);mc.fillStyle=col;mc.beginPath();mc.arc(0,0,rr,0,6.29);mc.fill();if(txt){mc.fillStyle='#1a1430';mc.fillText(txt,0,1);}mc.restore();};
   for(const p of pois){if(Math.abs(p.x-pp.x)>radius*1.2||Math.abs(p.z-pp.z)>radius*1.2)continue;if(p.type==='home'&&!P.homes.includes(p.extra))continue;if(radius>400&&!['pump','cng','airport','station','home','hospital'].includes(p.type))continue;icon(p.x,p.z,p.color,p.icon,8);}
@@ -2280,18 +2352,20 @@ function renderIntro(){$('#gName').textContent=CFG.name;$('#gTag').textContent=C
   pickRow();$('#newGame').hidden=!hadSave;setAvatar();}
 /* start screen: India map, tap a state to start there */
 var startPick=null;
-const stateRegion=st=>{const IS=window.INDIA_STATES;const q=IS&&IS.states.find(x=>x.id===st.toLowerCase());return q?q.region:null;};
+// Beta v2.00.00: the map's state codes that differ from the outline file (Chhattisgarh, Odisha, Uttarakhand; Ladakh is drawn inside J&K)
+const SVGID={CG:'ct',OD:'or',UK:'ut',LA:'jk'},STOF={CT:'CG',OR:'OD',UT:'UK'};
+const stateRegion=st=>{const IS=window.INDIA_STATES;const id=(SVGID[st]||st).toLowerCase();const q=IS&&IS.states.find(x=>x.id===id);return q?q.region:null;};
 function statePlayable(st){const r=REGIONS.find(q=>q.id===stateRegion(st));return !!(r&&r.map&&CFG.regions[r.id]&&!(CFG.states&&CFG.states[st]===false)&&W.startZones&&W.startZones[st]&&W.zones.some(z=>z.st===st));}
 function drawStartMap(){const el=$('#cities');const IS=window.INDIA_STATES;if(!IS){el.innerHTML='';return;}
-  const sel=startPick?startPick.st.toLowerCase():'';
-  el.innerHTML=`<div class="smap"><svg viewBox="${IS.viewBox}" role="img" aria-label="Map of India. Tap a bright state to start there.">${IS.states.map(q=>{const st=q.id.toUpperCase(),ok=statePlayable(st);return `<path data-st="${st}" d="${q.d}" class="${ok?'ok':'no'}${q.id===sel?' on':''}"><title>${esc(q.name)}${ok?'':' · coming soon'}</title></path>`;}).join('')}</svg></div><div class="spick" id="spick"></div>`;
-  el.querySelector('svg').onclick=e=>{const p=e.target.closest('path[data-st]');if(!p)return;const st=p.dataset.st;const q=IS.states.find(x=>x.id===st.toLowerCase());if(!statePlayable(st)){toast(`${esc(q?q.name:st)} opens in a coming update`,'#d6c8e4');return;}
+  const sel=startPick?(SVGID[startPick.st]||startPick.st).toLowerCase():'';
+  el.innerHTML=`<div class="smap"><svg viewBox="${IS.viewBox}" role="img" aria-label="Map of India. Tap a bright state to start there.">${IS.states.map(q=>{const st=STOF[q.id.toUpperCase()]||q.id.toUpperCase(),ok=statePlayable(st);return `<path data-st="${st}" d="${q.d}" class="${ok?'ok':'no'}${q.id===sel?' on':''}"><title>${esc(q.name)}${ok?'':' · coming soon'}</title></path>`;}).join('')}</svg></div><div class="spick" id="spick"></div>`;
+  el.querySelector('svg').onclick=e=>{const p=e.target.closest('path[data-st]');if(!p)return;const st=p.dataset.st;const q=IS.states.find(x=>x.id===(SVGID[st]||st).toLowerCase());if(!statePlayable(st)){toast(`${esc(q?q.name:st)} opens in a coming update`,'#d6c8e4');return;}
     const z=W.zones.find(x=>x.id===W.startZones[st]);startPick={st,zone:z};el.querySelectorAll('path.on').forEach(x=>x.classList.remove('on'));p.classList.add('on');pickRow();};
   pickRow();}
 function pickRow(){const el=$('#spick');if(!el)return;const go0=$('#go'),go=go0.querySelector('.gt')||go0;
   if(!startPick){const lz=lastZone();el.innerHTML=hadSave?`<p>Continue where you left off${lz?' in <b>'+esc(lz.name)+'</b>':''}, or tap a bright state to travel somewhere new.</p>`:`<p><b>Choose your city</b> · tap a bright state, then a city.</p>`;go.textContent=hadSave?(lz?'Continue in '+lz.name:'Continue'):'Start';return;}
-  const st=startPick.st,zs=W.zones.filter(z=>z.st===st).sort((a,b)=>({big:0,mid:1,small:2}[a.size]-{big:0,mid:1,small:2}[b.size]));
-  el.innerHTML=`<b>${esc(W.states[st])}</b><div class="chips">${zs.slice(0,8).map(z=>`<button class="chip${z===startPick.zone?' on':''}" data-z="${z.id}">${esc(z.name)}</button>`).join('')}</div><button class="go spgo" type="button" data-spgo="1">▶ ${hadSave?'Go to':'Start at'} ${esc(startPick.zone.name)}</button>`;
+  const st=startPick.st,zs=W.zones.filter(z=>z.st===st||(st==='JK'&&z.st==='LA')).sort((a,b)=>({big:0,mid:1,small:2}[a.size]-{big:0,mid:1,small:2}[b.size]));
+  el.innerHTML=`<b>${esc(W.states[st])}</b><div class="chips">${zs.slice(0,st==='JK'?10:8).map(z=>`<button class="chip${z===startPick.zone?' on':''}" data-z="${z.id}">${esc(z.name)}</button>`).join('')}</div><button class="go spgo" type="button" data-spgo="1">▶ ${hadSave?'Go to':'Start at'} ${esc(startPick.zone.name)}</button>`;
   el.onclick=e=>{if(e.target.closest('[data-spgo]')){if(!go0.disabled)go0.click();else toast('Still loading · one moment','#d6c8e4');return;}const id=e.target.dataset.z;if(!id)return;startPick.zone=W.zones.find(z=>z.id===id);pickRow();};
   go.textContent=(hadSave?'Go to ':'Start at ')+startPick.zone.name;}
 function lastZone(){if(!hadSave||!P.pos)return null;return zoneAt(P.pos.x,P.pos.z,300)||W.zones.slice().sort((a,b)=>Math.hypot(a.x0+a.nx*40-P.pos.x,a.z0+a.nz*40-P.pos.z)-Math.hypot(b.x0+b.nx*40-P.pos.x,b.z0+b.nz*40-P.pos.z))[0];}
@@ -2316,7 +2390,7 @@ $('#go').onclick=()=>{if(!P.name)return profileSheet(true,begin);begin();};
 /* ================= feature API ================= */
 // Fewer bot cars and people when real players are around (set by online play).
 let botScale=1;function setBotScale(k){k=clamp(k,.2,1);if(Math.abs(k-botScale)<.04)return;botScale=k;if(started)setPedCount(Math.round(CFG.peds*botScale*GFX.k));}
-const api={GFX,onFire:f=>fireHooks.push(f),setBotScale,get botScale(){return botScale;},openPoi:p=>openPoi(p),foodSheet:p=>foodSheet(p),colliders,cost,rawCost,enterVenue,leaveVenue:()=>leaveHome(),interScene:inter.scene,get insideVenue(){return inside&&inside.venue;},storeOwned,roadSpotNear,THREE,scene,camera,renderer,player,vehicles,peds,pois,SPEC,WORLD:W,REGIONS,FURN,HTYPE,inter,avatar,outfitParts,mapCanvas,MAPS,
+const api={GFX,MAPZ0:Z0,isForeign,onFire:f=>fireHooks.push(f),setBotScale,get botScale(){return botScale;},openPoi:p=>openPoi(p),foodSheet:p=>foodSheet(p),colliders,cost,rawCost,enterVenue,leaveVenue:()=>leaveHome(),interScene:inter.scene,get insideVenue(){return inside&&inside.venue;},storeOwned,roadSpotNear,THREE,scene,camera,renderer,player,vehicles,peds,pois,SPEC,WORLD:W,REGIONS,FURN,HTYPE,inter,avatar,outfitParts,mapCanvas,MAPS,
   get CFG(){return CFG;},get P(){return P;},get clock(){return clockH;},get gameDay(){return gameDay;},get inside(){return inside;},get muted(){return muted;},setMuted,get vehSound(){return vehOn;},set vehSound(v){vehOn=!!v;},get testMode(){return TESTMODE;},setTestMode(on){save();store.set('ib.testmode',!!on);sessionStorage.setItem('ib.cloudLoaded','1');location.reload();},get god(){return godMode;},set god(v){godMode=!!v;},get audio(){return ac;},get started(){return started;},get weather(){return wx.cur;},get camMode(){return camMode;},
   toast,big,openSheet,closeSheet,rowHtml,spend,earn,notify,collideTest(v){const q=v.clone();return collide(q,.5,true);},colsAt(x,z,r,foot){const out=[];for(const c of colliders){if(Math.abs(c.x-x)<c.hw+r&&Math.abs(c.z-z)<c.hd+r&&(foot?c.foot:c.veh))out.push(c);}return out;},drivableAt:(x,z)=>drivable(x,z),seatAvatar,obstTop,puff,dropCar,carValue,garageSheet,vehText,storeOwned,blockAt,twoSided,logoTex,LOGO_IMG,exitDoor,wetNear,pedBlock,pedPush,BLDS,setPlate,plateTex,get ownedVehicles(){return ownedVeh;},inPool,POOLS,addPlatform,removePlatform,groundAt,jump,inr,price,esc,addWanted,damage,save,makeVeh,removeVeh,spawnOwned,ownedVeh,buyVehicle,ppos,edgePos,box,boxRot,addStatic,flushStatic,LMat,buildPerson,addSign,
   addPoi(o){const p=makePoi(o);return p;},addApp,addMission,addPrompt,addFirstPrompt(f){firstPrompts.push(f);},poiHandlers,speedMods,on,emit,openWait,closeWait,startActivity,startQueue,startSleep,teleport,nearestRoadPoint,roadAt,drivable,isWater,isLand,zoneAt,stateAt,

@@ -20,11 +20,11 @@ window.FOOTBALL = (function () {
     { id: 'mbsg', name: 'Mohun Bagan Super Giant', short: 'MBSG', col: '#1e8a4c', col2: '#8b1e2d' },
     { id: 'ebfc', name: 'East Bengal FC', short: 'EBFC', col: '#d6262f', col2: '#f2c14e' },
     { id: 'msc', name: 'Mohammedan SC', short: 'MSC', col: '#1a1a1a', col2: '#ffffff' },
-    { id: 'cfc', name: 'Chennaiyin FC', short: 'CFC', col: '#2a62c9', col2: '#f2c14e' },
+    { id: 'cfc', name: 'Chennaiyin FC', short: 'CFC', zone: 'chennai', stadium: 'Jawaharlal Nehru Stadium, Chennai', col: '#2a62c9', col2: '#f2c14e', fans: 'Supermachans', chant: 'Supermachans! Chennaiyin!' },
     { id: 'neu', name: 'NorthEast United FC', short: 'NEUFC', col: '#c8102e', col2: '#1a1a1a' },
     { id: 'jfc', name: 'Jamshedpur FC', short: 'JFC', col: '#e03c31', col2: '#ffffff' },
-    { id: 'ofc', name: 'Odisha FC', short: 'OFC', col: '#6b2fa0', col2: '#f2c14e' },
-    { id: 'pfc', name: 'Punjab FC', short: 'PFC', col: '#e8573e', col2: '#ffffff' }
+    { id: 'ofc', name: 'Odisha FC', short: 'OFC', zone: 'bhubaneswar', stadium: 'Kalinga Stadium', col: '#6b2fa0', col2: '#f2c14e', fans: 'Juggernauts fan club', chant: 'Juggernauts! Odisha!' },
+    { id: 'pfc', name: 'Punjab FC', short: 'PFC', zone: 'delhi', stadium: 'Jawaharlal Nehru Stadium, Delhi', col: '#e8573e', col2: '#ffffff', fans: 'Punjab FC fan club', chant: 'Sher-e-Punjab! Punjab FC!' }
   ];
   const byId = id => teams.find(t => t.id === id);
   const homeTeams = teams.filter(t => t.stadium);

@@ -61,10 +61,12 @@ nav.sub{margin-top:-4px}label.wide{grid-column:1/-1}.list .lrow label.wide texta
 </div>
 <script src="../js/site-config.js"></script>
 <script src="../js/online-config.js"></script>
-<script src="../js/config.js?v=1.01.29"></script>
+<script src="../js/config.js?v=2.00.00"></script>
 <script src="../js/world-west.js"></script>
 <script src="../js/world-southwest.js"></script>
-<script src="../js/prices.js?v=1.01.29"></script>
+<script src="../js/world-southeast.js"></script>
+<script src="../js/world-north.js"></script>
+<script src="../js/prices.js?v=2.00.00"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js"></script>
 <script>
 (function () {
@@ -305,8 +307,8 @@ nav.sub{margin-top:-4px}label.wide{grid-column:1/-1}.list .lrow label.wide texta
         <div class="grid2"><div class="card"><h3>By state</h3>${bars(tally(L, r => W.states[r.state] || r.state), L.length)}</div><div class="card"><h3>By city or town</h3>${bars(tally(L, r => r.zone).slice(0, 15), L.length)}</div><div class="card"><h3>Doing</h3>${bars(tally(L, r => ({ foot: 'Walking', drive: 'Driving', transit: 'Public transport', sleep: 'Sleeping', inside: 'Indoors' })[r.mode] || r.mode), L.length)}</div><div class="card"><h3>Age group</h3>${bars(tally(L, r => r.age_group || 'not given'), L.length)}</div></div>
         <div class="card"><h3>Players</h3><div class="tw"><table><tr><th>Username</th><th>Where</th><th>Doing</th><th>Look</th><th>Age</th><th>Account</th></tr>${L.slice(0, 200).map(r => `<tr><td>${esc(r.username)}</td><td>${esc(r.zone || '')}${r.state ? ' · ' + esc(W.states[r.state] || r.state) : ''}</td><td>${esc(r.mode)}</td><td>${r.female ? 'Female' : 'Male'}</td><td>${esc(r.age_group || '')}</td><td>${r.is_guest ? 'Guest' : 'Google'}</td></tr>`).join('')}</table></div></div>`;
       $('#dp').onchange = e => { const k = e.target.dataset.f; if (!k) return; liveF[k] = e.target.value; if (k === 'state') liveF.zone = 'all'; draw(); };
-      const cv = $('#lmap'); if (cv) { const x = cv.getContext('2d'); const sx = 640 / W.W, sz = 420 / W.H, s0 = Math.min(sx, sz); x.fillStyle = '#123049'; x.fillRect(0, 0, 640, 420); x.fillStyle = 'rgba(255,244,226,.35)'; for (const z of W.zones) x.fillRect(z.x0 * s0, z.z0 * s0, Math.max(2, z.nx * 80 * s0), Math.max(2, z.nz * 80 * s0));
-        for (const r of L) { if (r.x == null) continue; x.fillStyle = r.female ? '#ff5fa2' : '#5fb4ff'; x.beginPath(); x.arc(r.x * s0, r.z * s0, 4, 0, 6.29); x.fill(); } } };
+      const cv = $('#lmap'); if (cv) { const x = cv.getContext('2d'); const Z0 = W.Z0 || 0, sx = 640 / W.W, sz = 420 / (W.H - Z0), s0 = Math.min(sx, sz); x.fillStyle = '#123049'; x.fillRect(0, 0, 640, 420); x.fillStyle = 'rgba(255,244,226,.35)'; for (const z of W.zones) x.fillRect(z.x0 * s0, (z.z0 - Z0) * s0, Math.max(2, z.nx * 80 * s0), Math.max(2, z.nz * 80 * s0));
+        for (const r of L) { if (r.x == null) continue; x.fillStyle = r.female ? '#ff5fa2' : '#5fb4ff'; x.beginPath(); x.arc(r.x * s0, (r.z - Z0) * s0, 4, 0, 6.29); x.fill(); } } };
     await draw(); tabs.iv = setInterval(draw, 15000); }
   async function dashUsage() {
     const since = new Date(Date.now() - 14 * 864e5).toISOString().slice(0, 10);

@@ -103,7 +103,7 @@ window.BBFeatures.push(function (bb) {
       cam: (f, dt) => { const k = S.k; const vt = k.f ? 32 : k.b ? -7 : 0; S.v += (vt - S.v) * Math.min(1, dt * (vt ? .7 : 1.2)); const turn = (k.l ? 1 : 0) - (k.r ? 1 : 0); S.h += turn * 1.1 * dt; S.bank += (-turn * .35 - S.bank) * Math.min(1, dt * 3);
         const vyt = k.u ? 9 : k.d ? -9 : 0; S.vy += (vyt - S.vy) * Math.min(1, dt * 2.5); if (S.landed && !k.u) { S.v = 0; S.vy = 0; } if (k.u) { S.landed = false; S.roof = 0; }
         const px0 = S.x, pz0 = S.z, py0 = S.y, vy0 = S.vy;
-        S.x = Math.max(20, Math.min(W0 - 20, S.x + Math.sin(S.h) * S.v * dt)); S.z = Math.max(20, Math.min(H0 - 20, S.z + Math.cos(S.h) * S.v * dt)); S.y = Math.max(.2, Math.min(420, S.y + S.vy * dt));
+        S.x = Math.max(20, Math.min(W0 - 20, S.x + Math.sin(S.h) * S.v * dt)); S.z = Math.max((bb.MAPZ0 || 0) + 20, Math.min(H0 - 20, S.z + Math.cos(S.h) * S.v * dt)); S.y = Math.max(.2, Math.min(420, S.y + S.vy * dt));
         // Beta v1.01.25: buildings, hills and landmarks are solid. Touch down gently on a roof, or crash into a wall or the ground.
         const top = solidTop(S.x, S.z, S.h); S.floor = top;
         if (S.y < top + .2 && !S.landed) { const fromAbove = py0 >= top + .1; const imp = fromAbove ? Math.max(-vy0, Math.abs(S.v) * .5) : Math.abs(S.v);

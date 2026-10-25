@@ -11,10 +11,34 @@ window.BBFeatures.push(function (bb) {
     RJ: { name: 'RSRTC', full: 'RSRTC Rajasthan', body: '#2f6f3a', band: '#f4e3b0', seat: '#7b4a2a', note: 'Green and cream buses through the desert towns' },
     GA: { name: 'KTCL', full: 'Kadamba (KTCL) Goa', body: '#1b7f5c', band: '#f4f1ea', seat: '#2b4a6a', note: 'Kadamba green buses between the beaches and towns' },
     DD: { name: 'DNH-DD', full: 'DNH & DD transport', body: '#2a62c9', band: '#f4f1ea', seat: '#2b3a5a', note: 'Blue buses around Daman and Silvassa' } };
+  // Beta v1.01.30: the South-East
+  Object.assign(OPS, { TN: { name: 'TNSTC', full: 'TNSTC Tamil Nadu', body: '#c8202a', band: '#f2e6c8', seat: '#3d3d46', note: 'Tamil Nadu state buses · SETC for the long routes · women ride free on town buses' },
+    AP: { name: 'APSRTC', full: 'APSRTC Andhra Pradesh', body: '#2f7d4a', band: '#f4f1ea', seat: '#2f3f5f', note: 'Pallevelugu village buses and Garuda AC coaches · women ride free' },
+    TG: { name: 'TGSRTC', full: 'TGSRTC Telangana', body: '#c1272d', band: '#f6d24a', seat: '#3d3d46', note: 'Red express buses and Rajadhani AC coaches · women ride free' },
+    PY: { name: 'PRTC', full: 'PRTC Puducherry', body: '#1f6fb5', band: '#f4f1ea', seat: '#2b3a5a', note: 'Puducherry Road Transport buses on the ECR' } });
+  // Beta v2.00.00: the north, the centre and the east
+  Object.assign(OPS, { DL: { name: 'DTC', full: 'DTC Delhi', body: '#2f7d4a', band: '#f2c230', seat: '#3d3d46', note: 'Green low-floor and electric DTC buses · women ride free with a pink ticket' },
+    HR: { name: 'Haryana Roadways', full: 'Haryana Roadways', body: '#1f5fa8', band: '#f4f1ea', seat: '#3d3d46', note: 'Blue Haryana Roadways buses and Volvos to the Delhi airport' },
+    PB: { name: 'PRTC', full: 'PRTC · PUNBUS Punjab', body: '#e36a1f', band: '#f4f1ea', seat: '#3d3d46', note: 'Orange PRTC and PUNBUS buses · Indo-Canadian Volvos to Delhi airport' },
+    CH: { name: 'CTU', full: 'CTU Chandigarh', body: '#c1272d', band: '#f4f1ea', seat: '#3d3d46', note: 'Chandigarh Transport Undertaking buses round the sectors' },
+    HP: { name: 'HRTC', full: 'HRTC Himachal', body: '#2f6f3a', band: '#f4f1ea', seat: '#3d3d46', note: 'HRTC mountain buses · the overnight Volvo from Delhi and the long Delhi–Leh bus' },
+    UK: { name: 'UTC', full: 'Uttarakhand Roadways', body: '#1f6fb5', band: '#f6d24a', seat: '#3d3d46', note: 'Uttarakhand Roadways and GMOU hill buses on the Char Dham roads' },
+    JK: { name: 'JKSRTC', full: 'JKSRTC', body: '#c8202a', band: '#f4f1ea', seat: '#3d3d46', note: 'JKSRTC buses · Sumo shared taxis between the towns' },
+    LA: { name: 'JKSRTC Leh', full: 'Leh buses (JKSRTC and HRTC)', body: '#f2c230', band: '#3d3d46', seat: '#3d3d46', note: 'A few buses a day · local union taxis everywhere else' },
+    UP: { name: 'UPSRTC', full: 'UPSRTC Uttar Pradesh', body: '#e36a1f', band: '#f4f1ea', seat: '#3d3d46', note: 'UPSRTC Janrath AC and Volvos on the expressways · pink buses for women' },
+    MP: { name: 'Private bus', full: 'Private buses · Madhya Pradesh', body: '#7a3d9a', band: '#f2c230', seat: '#3d3d46', note: 'Private buses with touts calling out the stops' },
+    CG: { name: 'Private bus', full: 'Private buses · Chhattisgarh', body: '#2f7d4a', band: '#f2c230', seat: '#3d3d46', note: 'Private buses between the towns' },
+    OD: { name: 'OSRTC', full: 'OSRTC Odisha', body: '#1f6fb5', band: '#f4f1ea', seat: '#3d3d46', note: 'OSRTC buses and private buses across Odisha' } });
   OPS.DN = OPS.DD;
   const CITY = { mumbai: { name: 'BEST', full: 'BEST Mumbai', body: '#b8202a', band: '#f3efe6', seat: '#4a4f57', dd: true, note: 'Red BEST buses, some double-deckers' }, bengaluru: { name: 'BMTC', full: 'BMTC Bengaluru', body: '#2f7d4a', band: '#e9f2e4', seat: '#2f3f5f', note: 'Green and white BMTC buses' },
     pune: { name: 'PMPML', full: 'PMPML Pune', body: '#d06a1d', band: '#f4f1ea', seat: '#3d3d46', note: 'Orange PMPML city buses' }, ahmedabad: { name: 'AMTS', full: 'AMTS Ahmedabad', body: '#c0392b', band: '#f6e7c1', seat: '#4a3b2b', note: 'AMTS red city buses' },
-    kochi: { name: 'KSRTC', full: 'KSRTC city · Kochi', body: '#1f6fb5', band: '#f4f1ea', seat: '#2b3a5a', note: 'Blue KSRTC city circulars' }, jaipur: { name: 'JCTSL', full: 'JCTSL Jaipur', body: '#ff8f1f', band: '#fff4e2', seat: '#5a3b2b', note: 'Orange Jaipur city buses' } };
+    kochi: { name: 'KSRTC', full: 'KSRTC city · Kochi', body: '#1f6fb5', band: '#f4f1ea', seat: '#2b3a5a', note: 'Blue KSRTC city circulars' }, jaipur: { name: 'JCTSL', full: 'JCTSL Jaipur', body: '#ff8f1f', band: '#fff4e2', seat: '#5a3b2b', note: 'Orange Jaipur city buses' },
+    chennai: { name: 'MTC', full: 'MTC Chennai', body: '#1f5fa8', band: '#f4f1ea', seat: '#3d3d46', note: 'Blue MTC buses, some electric · women ride free' }, hyderabad: { name: 'TGSRTC', full: 'TGSRTC city · Hyderabad', body: '#c1272d', band: '#f4f1ea', seat: '#3d3d46', note: 'Red city buses and electric buses' },
+    visakhapatnam: { name: 'APSRTC', full: 'APSRTC city · Vizag', body: '#2f7d4a', band: '#f4f1ea', seat: '#2f3f5f', note: 'Green city buses along the Beach Road' },
+    delhi: { name: 'DTC', full: 'DTC Delhi', body: '#d6262f', band: '#f4f1ea', seat: '#3d3d46', note: 'Red AC and green non-AC DTC buses, many electric' }, gurugram: { name: 'GMCBL', full: 'GMCBL Gurugram', body: '#1f6fb5', band: '#f4f1ea', seat: '#3d3d46', note: 'Gurugram city buses' },
+    chandigarh: { name: 'CTU', full: 'CTU Chandigarh', body: '#c1272d', band: '#f4f1ea', seat: '#3d3d46', note: 'Red CTU city buses round the sectors' }, lucknow: { name: 'LCTSL', full: 'Lucknow city buses', body: '#2f7d4a', band: '#f4f1ea', seat: '#3d3d46', note: 'Green and electric city buses' },
+    indore: { name: 'iBus', full: 'iBus Indore', body: '#e36a1f', band: '#f4f1ea', seat: '#3d3d46', note: 'Indore BRTS iBus in its own lane' }, bhopal: { name: 'BCLL', full: 'BCLL Bhopal', body: '#c1272d', band: '#f4f1ea', seat: '#3d3d46', note: 'Red Bhopal city buses' },
+    bhubaneswar: { name: 'Mo Bus', full: 'Mo Bus Bhubaneswar', body: '#2f7d4a', band: '#7fd06a', seat: '#3d3d46', note: 'Smart green Mo Bus city buses' }, raipur: { name: 'City bus', full: 'Raipur city buses', body: '#1f6fb5', band: '#f4f1ea', seat: '#3d3d46', note: 'Blue city buses' } };
   const zoneOf = at => at && at.zone ? at.zone : at ? bb.zoneAt(at.x, at.z, 250) : null;
   const opFor = (at, city) => { const z = zoneOf(at); if (city && z && CITY[z.id]) return CITY[z.id]; return (z && OPS[z.st]) || OPS.MH; };
   // Beta v1.01.24: the livery also names its style, so the bus is drawn like the real one (see buildBus in the core).

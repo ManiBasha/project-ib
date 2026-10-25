@@ -7,12 +7,12 @@ window.CRICKET = (function () {
     { id: 'gt', name: 'Gujarat Titans', short: 'GT', zone: 'ahmedabad', stadium: 'Narendra Modi Stadium', col: '#1b2133', col2: '#c8a14c', chant: 'Aava de! Gujarat Titans!' },
     { id: 'rcb', name: 'Royal Challengers Bengaluru', short: 'RCB', zone: 'bengaluru', stadium: 'M. Chinnaswamy Stadium', col: '#d1171b', col2: '#1a1a1a', chant: 'RCB! RCB!' },
     { id: 'rr', name: 'Rajasthan Royals', short: 'RR', zone: 'jaipur', stadium: 'Sawai Mansingh Stadium', col: '#ea1a85', col2: '#254aa5', chant: 'Halla Bol! Rajasthan Royals!' },
-    { id: 'csk', name: 'Chennai Super Kings', short: 'CSK', col: '#f9cd05', col2: '#0081e9' },
+    { id: 'csk', name: 'Chennai Super Kings', short: 'CSK', zone: 'chennai', stadium: 'MA Chidambaram Stadium (Chepauk)', col: '#f9cd05', col2: '#0081e9', chant: 'Whistle Podu! Whistle Podu!' },
     { id: 'kkr', name: 'Kolkata Knight Riders', short: 'KKR', col: '#3a225d', col2: '#d4af37' },
-    { id: 'dc', name: 'Delhi Capitals', short: 'DC', col: '#17479e', col2: '#d71920' },
-    { id: 'pbks', name: 'Punjab Kings', short: 'PBKS', col: '#d71920', col2: '#c0c0c0' },
-    { id: 'srh', name: 'Sunrisers Hyderabad', short: 'SRH', col: '#f26522', col2: '#1a1a1a' },
-    { id: 'lsg', name: 'Lucknow Super Giants', short: 'LSG', col: '#0057e2', col2: '#f26522' }
+    { id: 'dc', name: 'Delhi Capitals', short: 'DC', zone: 'delhi', stadium: 'Arun Jaitley Stadium', col: '#17479e', col2: '#d71920', chant: 'Roar Macha! Delhi Capitals!' },
+    { id: 'pbks', name: 'Punjab Kings', short: 'PBKS', zone: 'mohali', stadium: 'Maharaja Yadavindra Singh Stadium, Mullanpur', col: '#d71920', col2: '#c0c0c0', chant: 'Sadda Punjab! Punjab Kings!' },
+    { id: 'srh', name: 'Sunrisers Hyderabad', short: 'SRH', zone: 'hyderabad', stadium: 'Rajiv Gandhi International Stadium', col: '#f26522', col2: '#1a1a1a', chant: 'Orange Army! Rise!' },
+    { id: 'lsg', name: 'Lucknow Super Giants', short: 'LSG', zone: 'lucknow', stadium: 'Ekana Cricket Stadium', col: '#0057e2', col2: '#f26522', chant: 'Lucknow! Lucknow! Super Giants!' }
   ];
   const byId = id => teams.find(t => t.id === id);
   const homeTeams = teams.filter(t => t.stadium);

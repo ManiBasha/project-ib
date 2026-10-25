@@ -5,7 +5,8 @@
 // pours tea; tea and snacks come from the stall's menu (walk up and press E).
 window.BBFeatures.push(function (bb) {
   const T = bb.THREE; const MC = {}; const mat = c => MC[c] || (MC[c] = bb.LMat(c));
-  const NAMES = { KL: 'CHAYA KADA', KA: 'TEA ANGADI', GA: 'CHAI STALL', MH: 'CHAHA TAPRI', GJ: 'CHAI NI LARI', RJ: 'CHAI KI THADI', DD: 'TEA STALL', DN: 'TEA STALL' };
+  const NAMES = { TN: 'TEA KADAI', PY: 'TEA KADAI', AP: 'TEA KOTTU', TG: 'IRANI CHAI', KL: 'CHAYA KADA', KA: 'TEA ANGADI', GA: 'CHAI STALL', MH: 'CHAHA TAPRI', GJ: 'CHAI NI LARI', RJ: 'CHAI KI THADI', DD: 'TEA STALL', DN: 'TEA STALL',
+    DL: 'CHAI STALL', HR: 'CHAI KI DUKAN', PB: 'CHAH DI HATTI', CH: 'CHAI STALL', HP: 'CHAI DHABA', UK: 'CHAI DHABA', JK: 'KAHWA STALL', LA: 'BUTTER TEA', UP: 'CHAI KI TAPRI', MP: 'CHAI TAPRI', CG: 'CHAI TAPRI', OD: 'CHA DOKANA' };
   const stalls = [];
   function geo(g, w, h, d, x, y, z, ry, m, rx) { const b = new T.BoxGeometry(w, h, d); if (rx) b.rotateX(rx); b.rotateY(ry); b.translate(x, y, z); bb.addStatic(b, mat(m)); }
   function cyl(r1, r2, h, x, y, z, m, seg) { const c = new T.CylinderGeometry(r1, r2, h, seg || 10); c.translate(x, y, z); bb.addStatic(c, mat(m)); }
@@ -13,7 +14,7 @@ window.BBFeatures.push(function (bb) {
   function build(p) { const st = (p.zone && p.zone.st) || bb.stateAt(p.x, p.z); const ry = p.rot || 0; const back = -3.2; const [cx, cz] = off(p.x, p.z, ry, 0, back);
     if (bb.isWater(cx, cz)) return; const at = (lx, lz) => off(cx, cz, ry, lx, lz); const B = (w, h, d, lx, y, lz, m, rx) => { const [x, z] = at(lx, lz); geo(null, w, h, d, x, y, z, ry, m, rx); };
     const C = (r1, r2, h, lx, y, lz, m, seg) => { const [x, z] = at(lx, lz); cyl(r1, r2, h, x, y, z, m, seg); };
-    if (st === 'KL' || st === 'KA' || st === 'GA') {
+    if (st === 'KL' || st === 'KA' || st === 'GA' || st === 'TN' || st === 'PY' || st === 'AP') {
       for (const [lx, lz] of [[-1.6, -1.2], [1.6, -1.2], [-1.6, 1.2], [1.6, 1.2]]) B(.14, 2.5, .14, lx, 1.25, lz, '#5a3b22');                 // posts
       B(3.6, .9, 1.3, 0, .45, .55, '#6b4a2c'); B(3.7, .06, 1.4, 0, .92, .55, '#8a6a44');                                                   // counter
       B(1.1, .7, .55, -.9, 1.3, .55, '#cfe9f2'); B(1.14, .04, .58, -.9, 1.67, .55, '#5a3b22');                                             // glass snack cabinet

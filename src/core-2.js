@@ -749,9 +749,14 @@ const FAUNA=[{kind:'lion',x:1800,z:5780,rx:330,rz:200,n:5},{kind:'lioness',x:180
   {kind:'tiger',x:6000,z:2150,rx:260,rz:170,n:4},{kind:'deer',x:6000,z:2150,rx:260,rz:170,n:6},{kind:'peacock',x:6020,z:2120,rx:200,rz:140,n:4},
   {kind:'camel',x:1030,z:1310,rx:160,rz:140,n:7},{kind:'camel',x:4220,z:1860,rx:90,rz:70,n:4},{kind:'peacock',x:4220,z:1860,rx:90,rz:70,n:3}];
 const STRAYS={def:[['cow',36],['dog',30],['goat',14],['buffalo',12],['monkey',5],['peacock',3]],RJ:[['cow',30],['camel',20],['dog',20],['goat',14],['peacock',8],['monkey',8]],GJ:[['cow',34],['buffalo',16],['dog',24],['goat',12],['camel',8],['peacock',6]],
-  KL:[['dog',34],['cow',22],['goat',20],['buffalo',8],['monkey',12],['elephant',4]],GA:[['dog',38],['cow',26],['buffalo',16],['goat',12],['monkey',8]],KA:[['cow',32],['dog',28],['buffalo',14],['goat',12],['monkey',10],['elephant',4]],LD:[['goat',55],['cow',35],['buffalo',10]],mumbai:[['dog',70],['goat',15],['cow',10],['monkey',5]]};
+  KL:[['dog',34],['cow',22],['goat',20],['buffalo',8],['monkey',12],['elephant',4]],GA:[['dog',38],['cow',26],['buffalo',16],['goat',12],['monkey',8]],KA:[['cow',32],['dog',28],['buffalo',14],['goat',12],['monkey',10],['elephant',4]],LD:[['goat',55],['cow',35],['buffalo',10]],TN:[['dog',34],['cow',28],['goat',16],['buffalo',10],['monkey',8],['peacock',4]],PY:[['dog',40],['cow',30],['goat',20],['buffalo',10]],AP:[['cow',30],['buffalo',22],['dog',24],['goat',14],['monkey',6],['peacock',4]],TG:[['buffalo',20],['cow',26],['dog',24],['goat',16],['monkey',10],['peacock',4]],mumbai:[['dog',70],['goat',15],['cow',10],['monkey',5]],
+  DL:[['dog',34],['cow',30],['monkey',16],['goat',10],['buffalo',10]],HR:[['buffalo',30],['cow',26],['dog',22],['goat',12],['camel',6],['peacock',4]],PB:[['buffalo',30],['cow',26],['dog',24],['goat',12],['peacock',8]],
+  CH:[['dog',50],['cow',30],['monkey',20]],HP:[['dog',30],['goat',30],['cow',20],['monkey',20]],UK:[['dog',28],['cow',24],['goat',24],['monkey',24]],JK:[['dog',38],['goat',30],['cow',22],['monkey',10]],
+  LA:[['dog',50],['goat',40],['cow',10]],UP:[['cow',32],['buffalo',20],['dog',24],['goat',12],['monkey',12]],MP:[['cow',30],['buffalo',18],['dog',24],['goat',16],['monkey',8],['peacock',4]],
+  CG:[['cow',30],['buffalo',20],['dog',26],['goat',18],['peacock',6]],OD:[['cow',34],['dog',28],['goat',16],['buffalo',14],['monkey',8]]};
 // forest zones where wild elephants, deer and monkeys can cross the highway
-const FOREST=['thekkady','munnar','kalpetta','madikeri','mollem','chikkamagaluru','sasangir','ranthambore','mountabu'];
+const FOREST=['thekkady','munnar','kalpetta','madikeri','mollem','chikkamagaluru','sasangir','ranthambore','mountabu','ooty','valparai','kodaikanal','araku','srisailam',
+  'ramnagar','mandla','umaria','seoni','pachmarhi','dudhwa','sheopur','panna','baripada','daringbadi','kanker','rishikesh','kondagaon','mainpat'];
 const STRAY_SIZE={cow:.9,buffalo:1,goat:.45,dog:.4,camel:1,monkey:.35,peacock:.4,elephant:1.6,deer:.6};
 function addFauna(f){for(let i=0;i<f.n;i++){const g=buildAnimal(f.kind,{male:f.kind==='deer'?i%2===0:undefined});g.visible=false;scene.add(g);animals.push({g,kind:f.kind,area:f,x:f.x+MR(-.6,.6)*f.rx,z:f.z+MR(-.6,.6)*f.rz,h:MR(0,6.28),sp:0,t:0,hp:100,state:'ok'});}}
 for(const f of FAUNA)addFauna(f);

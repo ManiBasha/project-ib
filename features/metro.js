@@ -3,7 +3,8 @@
 // and a metro train running up and down the line. Rides themselves are in features/travel.js.
 window.BBFeatures.push(function (bb) {
   const T = bb.THREE, W = bb.WORLD; const DECK = 11;
-  const LINE = { mumbai: ['#1f6fd1', '#e8eef7'], pune: ['#e2231a', '#f4f4f4'], ahmedabad: ['#d81e5b', '#f4f4f4'], jaipur: ['#f08a24', '#f4f4f4'], bengaluru: ['#7a3d9a', '#f4f4f4'], kochi: ['#1aa39a', '#f4f4f4'] };
+  const LINE = { mumbai: ['#1f6fd1', '#e8eef7'], pune: ['#e2231a', '#f4f4f4'], ahmedabad: ['#d81e5b', '#f4f4f4'], jaipur: ['#f08a24', '#f4f4f4'], bengaluru: ['#7a3d9a', '#f4f4f4'], kochi: ['#1aa39a', '#f4f4f4'], chennai: ['#1f6fd1', '#f4f4f4'], hyderabad: ['#d6262f', '#f4f4f4'],
+    delhi: ['#f2b71f', '#f4f4f4'], gurugram: ['#2a62c9', '#f4f4f4'], noida: ['#1fb5b5', '#f4f4f4'], lucknow: ['#d6262f', '#f4f4f4'], kanpur: ['#e2231a', '#f4f4f4'], agra: ['#7a3d9a', '#f4f4f4'], meerut: ['#2f7d4a', '#f4f4f4'], indore: ['#ff8f1f', '#f4f4f4'], bhopal: ['#1f6fd1', '#f4f4f4'] };
   const kerb = bb.LMat('#d8d2c4'), grass = bb.LMat('#5f8f3e'), leaf = bb.LMat('#3f7a34'); const shrubG = new T.SphereGeometry(.7, 6, 4);
   const shrub = (x, z) => { const g = shrubG.clone(); g.scale(1, .8, 1); g.translate(x, .75, z); bb.addStatic(g, leaf); };
   const conc = bb.LMat('#c9c4bb'), concD = bb.LMat('#a9a39a'), rail = bb.LMat('#4a4a50'), roof = bb.LMat('#e6e1f2'), glass = new T.MeshLambertMaterial({ color: 0x9fd3e8, transparent: true, opacity: .55 });
