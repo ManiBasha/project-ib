@@ -16,7 +16,26 @@ window.BBFeatures.push(function (bb) {
     { id: 'katraj', name: 'Katraj Zoo', full: 'Rajiv Gandhi Zoological Park, Katraj', p: () => zoneP('pune', 20, 230), st: 'MH' },
     { id: 'bondla', name: 'Bondla Zoo', full: 'Bondla Wildlife Sanctuary and Zoo', p: () => zoneP('ponda', 140, -40), st: 'GA' },
     { id: 'pilikula', name: 'Pilikula Biological Park', full: 'Pilikula Biological Park, Mangaluru', p: () => zoneP('mangaluru', 40, -70), st: 'KA' },
-    { id: 'tvm', name: 'Thiruvananthapuram Zoo', full: 'Thiruvananthapuram Zoo and Museum', p: () => zoneP('thiruvananthapuram', 30, -40), st: 'KL' }];
+    { id: 'tvm', name: 'Thiruvananthapuram Zoo', full: 'Thiruvananthapuram Zoo and Museum', p: () => zoneP('thiruvananthapuram', 30, -40), st: 'KL' },
+    // Beta v2.01.00: zoos of the rest of the country
+    { id: 'delhizoo', name: 'National Zoological Park', full: 'National Zoological Park, Delhi', p: () => zoneP('delhi', 200, 60), st: 'DL' },
+    { id: 'chhatbir', name: 'Chhatbir Zoo', full: 'Mahendra Chaudhary Zoological Park, Chhatbir', p: () => zoneP('mohali', 60, 140), st: 'PB', safari: true },
+    { id: 'lucknowzoo', name: 'Lucknow Zoo', full: 'Nawab Wajid Ali Shah Zoological Garden', p: () => zoneP('lucknow', 120, -40), st: 'UP' },
+    { id: 'kanpurzoo', name: 'Kanpur Zoo', full: 'Allen Forest Zoo, Kanpur', p: () => zoneP('kanpur', 60, -150), st: 'UP' },
+    { id: 'etawah', name: 'Etawah Safari Park', full: 'Etawah Safari Park (lion safari)', p: () => zoneP('etawah', 140, 60), st: 'UP', safari: true },
+    { id: 'nahargarh', name: 'Nahargarh Biological Park', full: 'Nahargarh Biological Park, Jaipur', p: () => zoneP('jaipur', -40, -260), st: 'RJ', safari: true },
+    { id: 'vanvihar', name: 'Van Vihar', full: 'Van Vihar National Park and Zoo, Bhopal', p: () => zoneP('bhopal', -60, 60), st: 'MP' },
+    { id: 'gwaliorzoo', name: 'Gwalior Zoo', full: 'Gandhi Zoological Park, Gwalior', p: () => zoneP('gwalior', 40, 90), st: 'MP' },
+    { id: 'maitribagh', name: 'Maitri Bagh Zoo', full: 'Maitri Bagh Zoo, Bhilai (white tigers)', p: () => zoneP('bhilai', 60, 90), st: 'CG' },
+    { id: 'nandankanan', name: 'Nandankanan Zoo', full: 'Nandankanan Zoological Park (white tigers)', p: () => zoneP('bhubaneswar', 40, -200), st: 'OD', safari: true },
+    { id: 'nehruzoo', name: 'Nehru Zoological Park', full: 'Nehru Zoological Park, Hyderabad', p: () => zoneP('hyderabad', 60, 200), st: 'TG', safari: true },
+    { id: 'vandalur', name: 'Arignar Anna Zoo', full: 'Arignar Anna Zoological Park, Vandalur', p: () => zoneP('chennai', -60, 330), st: 'TN', safari: true },
+    { id: 'alipore', name: 'Alipore Zoo', full: 'Alipore Zoological Garden, Kolkata', p: () => zoneP('kolkata', -60, 150), st: 'WB' },
+    { id: 'patnazoo', name: 'Patna Zoo', full: 'Sanjay Gandhi Biological Park, Patna', p: () => zoneP('patna', 60, 150), st: 'BR' },
+    { id: 'birsazoo', name: 'Birsa Zoological Park', full: 'Bhagwan Birsa Biological Park, Ranchi', p: () => zoneP('ranchi', 60, 180), st: 'JH', safari: true },
+    { id: 'tatazoo', name: 'Jamshedpur Zoo', full: 'Tata Steel Zoological Park', p: () => zoneP('jamshedpur', -40, 140), st: 'JH' },
+    { id: 'darjzoo', name: 'Himalayan Zoo, Darjeeling', full: 'Padmaja Naidu Himalayan Zoological Park (red pandas)', p: () => zoneP('darjeeling', -40, 100), st: 'WB' },
+    { id: 'assamzoo', name: 'Assam State Zoo', full: 'Assam State Zoo cum Botanical Garden, Guwahati', p: () => zoneP('guwahati', 60, 230), st: 'AS' }];
   for (const z of ZOOS) { const p = z.p(); if (!p) continue; const [x, y, h] = bb.roadSpotNear({ x: p[0], z: p[1] }); z.x = x; z.z = y;
     bb.addPoi({ type: 'zoo', name: z.name, x, z: y, rot: h + Math.PI / 2, extra: z.id, zoo: z }); }
 
@@ -100,8 +119,8 @@ window.BBFeatures.push(function (bb) {
     // the information board facing the path
     label(g, h.name.toUpperCase(), h.sub, 4.4, h.x + (h.x > 0 ? -1 : 1) * Math.min(h.rx, 18) * .3, 2.4, h.z + h.rz + 3, 0, h.lake ? '#1f6f8b' : '#2f5d2a');
     // the animals
-    for (const [kind, n] of h.animals) for (let i = 0; i < n; i++) { const a = bb.buildAnimal(kind, { male: i === 0 }); g.add(a); let x, z, k = 0; do { x = h.x + MR(-.75, .75) * h.rx; z = h.z + MR(-.7, .7) * h.rz; k++; } while (k < 20 && wet(h, x, z) !== wantsWater(kind));
-      live.push({ g: a, kind, hab: h, area: h, x, z, h: MR(0, 6.28), sp: 0, t: MR(0, 3) }); } }
+    for (const [kind, n0] of h.animals) { const n = Math.min(n0 * 2, n0 + 3); for (let i = 0; i < n; i++) { const a = bb.buildAnimal(kind, { male: i === 0, scale: kind === 'peacock' || kind === 'flamingo' ? 1 : 1.25 }); g.add(a); let x, z, k = 0; do { x = h.x + MR(-.75, .75) * h.rx; z = h.z + MR(-.7, .7) * h.rz; k++; } while (k < 20 && wet(h, x, z) !== wantsWater(kind));
+      live.push({ g: a, kind, hab: h, area: h, x, z, h: MR(0, 6.28), sp: 0, t: MR(0, 3) }); } } }
   const wantsWater = k => k === 'hippo' || k === 'flamingo';
   function wet(h, x, z) { if (h.lake) { const dx = (x - h.x) / (h.rx * .8), dz = (z - h.z) / (h.rz * .72); return dx * dx + dz * dz < 1; } if (h.pondAt) { const dx = (x - h.pondAt.x) / h.pondAt.rx, dz = (z - h.pondAt.z) / h.pondAt.rz; return dx * dx + dz * dz < 1; } return false; }
   const inE = (a, x, z) => { const dx = (x - a.x) / a.rx, dz = (z - a.z) / a.rz; return dx * dx + dz * dz; };

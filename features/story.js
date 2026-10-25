@@ -136,7 +136,7 @@ window.BBFeatures.push(function (bb) {
   const visited = () => (P().extra.states = P().extra.states || {});
   bb.on('job', () => { const n = P().stats.trips; grant('firstjob'); if (n >= 10) grant('jobs10'); if (n >= 50) grant('jobs50'); });
   bb.on('buy', d => { if (d.kind === 'home') { grant('home'); if (P().homes.length >= 3) grant('homes3'); } if (d.kind === 'helmet') grant('helmet'); });
-  bb.on('zone', z => { visited()[z.st] = 1; const v = visited(); if (v.MH && v.GJ && v.RJ) grant('states'); if (v.GA && v.KA && v.KL) grant('south'); if (v.DD && v.DN) grant('ut'); });
+  bb.on('zone', z => { visited()[z.st] = 1; const v = visited(); if (v.MH && v.GJ && v.RJ) grant('states'); if (v.GA && v.KA && v.KL) grant('south'); if (v.DD) grant('ut'); });
   bb.on('discover', () => { const n = Object.keys(P().discovered).length; if (n >= 10) grant('places10'); if (n >= 30) grant('places30'); if (n >= W.places.length) grant('placesAll'); });
   bb.on('safari', () => grant('lions')); bb.on('camel', () => grant('camel'));
   bb.on('travel', d => { if (d.mode === 'local') grant('local'); if (d.mode === 'flight') grant('flight'); if (d.mode === 'metro') grant('metro'); if (d.mode === 'heli') grant('heli'); });

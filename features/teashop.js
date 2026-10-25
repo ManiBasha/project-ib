@@ -6,7 +6,8 @@
 window.BBFeatures.push(function (bb) {
   const T = bb.THREE; const MC = {}; const mat = c => MC[c] || (MC[c] = bb.LMat(c));
   const NAMES = { TN: 'TEA KADAI', PY: 'TEA KADAI', AP: 'TEA KOTTU', TG: 'IRANI CHAI', KL: 'CHAYA KADA', KA: 'TEA ANGADI', GA: 'CHAI STALL', MH: 'CHAHA TAPRI', GJ: 'CHAI NI LARI', RJ: 'CHAI KI THADI', DD: 'TEA STALL', DN: 'TEA STALL',
-    DL: 'CHAI STALL', HR: 'CHAI KI DUKAN', PB: 'CHAH DI HATTI', CH: 'CHAI STALL', HP: 'CHAI DHABA', UK: 'CHAI DHABA', JK: 'KAHWA STALL', LA: 'BUTTER TEA', UP: 'CHAI KI TAPRI', MP: 'CHAI TAPRI', CG: 'CHAI TAPRI', OD: 'CHA DOKANA' };
+    DL: 'CHAI STALL', HR: 'CHAI KI DUKAN', PB: 'CHAH DI HATTI', CH: 'CHAI STALL', HP: 'CHAI DHABA', UK: 'CHAI DHABA', JK: 'KAHWA STALL', LA: 'BUTTER TEA', UP: 'CHAI KI TAPRI', MP: 'CHAI TAPRI', CG: 'CHAI TAPRI', OD: 'CHA DOKANA',
+    BR: 'CHAI KI DUKAN', JH: 'CHAI DUKAN', WB: 'CHA-ER DOKAN', SK: 'TEA SHOP', AS: 'SAH DOKAN', ML: 'TEA SHOP', AR: 'TEA STALL', NL: 'TEA STALL', MN: 'CHA STALL', MZ: 'TEA STALL', TR: 'CHA-ER DOKAN', AN: 'TEA STALL' };
   const stalls = [];
   function geo(g, w, h, d, x, y, z, ry, m, rx) { const b = new T.BoxGeometry(w, h, d); if (rx) b.rotateX(rx); b.rotateY(ry); b.translate(x, y, z); bb.addStatic(b, mat(m)); }
   function cyl(r1, r2, h, x, y, z, m, seg) { const c = new T.CylinderGeometry(r1, r2, h, seg || 10); c.translate(x, y, z); bb.addStatic(c, mat(m)); }

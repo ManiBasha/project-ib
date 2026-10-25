@@ -29,6 +29,19 @@ window.BBFeatures.push(function (bb) {
     MP: { name: 'Private bus', full: 'Private buses · Madhya Pradesh', body: '#7a3d9a', band: '#f2c230', seat: '#3d3d46', note: 'Private buses with touts calling out the stops' },
     CG: { name: 'Private bus', full: 'Private buses · Chhattisgarh', body: '#2f7d4a', band: '#f2c230', seat: '#3d3d46', note: 'Private buses between the towns' },
     OD: { name: 'OSRTC', full: 'OSRTC Odisha', body: '#1f6fb5', band: '#f4f1ea', seat: '#3d3d46', note: 'OSRTC buses and private buses across Odisha' } });
+  // Beta v2.01.00: the east and north-east
+  Object.assign(OPS, { BR: { name: 'BSRTC', full: 'BSRTC Bihar', body: '#c1272d', band: '#f2c230', seat: '#3d3d46', note: 'BSRTC buses and many private buses · e-rickshaws in every town' },
+    JH: { name: 'Private bus', full: 'Private buses · Jharkhand', body: '#2f7d4a', band: '#f4f1ea', seat: '#3d3d46', note: 'Private buses between the towns and mines' },
+    WB: { name: 'WBTC', full: 'WBTC · SBSTC · NBSTC', body: '#1f6fb5', band: '#f2c230', seat: '#3d3d46', note: 'State buses and private buses · shared jeeps up to the hills' },
+    SK: { name: 'SNT', full: 'Sikkim Nationalised Transport', body: '#2f7d4a', band: '#f4f1ea', seat: '#3d3d46', note: 'SNT buses and shared jeeps on the mountain roads · permits needed for the passes' },
+    AS: { name: 'ASTC', full: 'ASTC Assam', body: '#c1272d', band: '#f4f1ea', seat: '#3d3d46', note: 'ASTC buses and overnight private buses along the Brahmaputra' },
+    ML: { name: 'MTC', full: 'Meghalaya Transport', body: '#1f6fb5', band: '#f4f1ea', seat: '#3d3d46', note: 'Buses and shared Sumos through the Khasi and Garo hills' },
+    AR: { name: 'APSTS', full: 'Arunachal Pradesh State Transport', body: '#e36a1f', band: '#f4f1ea', seat: '#3d3d46', note: 'A few state buses a day · shared Sumos to Tawang and beyond' },
+    NL: { name: 'NST', full: 'Nagaland State Transport', body: '#7a3d9a', band: '#f4f1ea', seat: '#3d3d46', note: 'NST buses and shared taxis' },
+    MN: { name: 'MSRTC Manipur', full: 'Manipur State Transport', body: '#2f6f3a', band: '#f2c230', seat: '#3d3d46', note: 'Buses and shared vans from Imphal' },
+    MZ: { name: 'MST', full: 'Mizoram State Transport', body: '#1f5fa8', band: '#f4f1ea', seat: '#3d3d46', note: 'Buses and Maxi cabs on the hill roads' },
+    TR: { name: 'TRTC', full: 'TRTC Tripura', body: '#c8202a', band: '#f4f1ea', seat: '#3d3d46', note: 'TRTC buses and private buses along NH8' },
+    AN: { name: 'STS', full: 'Andaman State Transport', body: '#1f8a8a', band: '#f4f1ea', seat: '#3d3d46', note: 'STS island buses · ferries between the islands' } });
   OPS.DN = OPS.DD;
   const CITY = { mumbai: { name: 'BEST', full: 'BEST Mumbai', body: '#b8202a', band: '#f3efe6', seat: '#4a4f57', dd: true, note: 'Red BEST buses, some double-deckers' }, bengaluru: { name: 'BMTC', full: 'BMTC Bengaluru', body: '#2f7d4a', band: '#e9f2e4', seat: '#2f3f5f', note: 'Green and white BMTC buses' },
     pune: { name: 'PMPML', full: 'PMPML Pune', body: '#d06a1d', band: '#f4f1ea', seat: '#3d3d46', note: 'Orange PMPML city buses' }, ahmedabad: { name: 'AMTS', full: 'AMTS Ahmedabad', body: '#c0392b', band: '#f6e7c1', seat: '#4a3b2b', note: 'AMTS red city buses' },
@@ -38,6 +51,8 @@ window.BBFeatures.push(function (bb) {
     delhi: { name: 'DTC', full: 'DTC Delhi', body: '#d6262f', band: '#f4f1ea', seat: '#3d3d46', note: 'Red AC and green non-AC DTC buses, many electric' }, gurugram: { name: 'GMCBL', full: 'GMCBL Gurugram', body: '#1f6fb5', band: '#f4f1ea', seat: '#3d3d46', note: 'Gurugram city buses' },
     chandigarh: { name: 'CTU', full: 'CTU Chandigarh', body: '#c1272d', band: '#f4f1ea', seat: '#3d3d46', note: 'Red CTU city buses round the sectors' }, lucknow: { name: 'LCTSL', full: 'Lucknow city buses', body: '#2f7d4a', band: '#f4f1ea', seat: '#3d3d46', note: 'Green and electric city buses' },
     indore: { name: 'iBus', full: 'iBus Indore', body: '#e36a1f', band: '#f4f1ea', seat: '#3d3d46', note: 'Indore BRTS iBus in its own lane' }, bhopal: { name: 'BCLL', full: 'BCLL Bhopal', body: '#c1272d', band: '#f4f1ea', seat: '#3d3d46', note: 'Red Bhopal city buses' },
+    kolkata: { name: 'WBTC', full: 'WBTC Kolkata', body: '#1f6fb5', band: '#f2c230', seat: '#3d3d46', note: 'Blue WBTC buses, yellow taxis and private minibuses' }, patna: { name: 'City bus', full: 'Patna city buses', body: '#2f7d4a', band: '#f4f1ea', seat: '#3d3d46', note: 'Green CNG and electric city buses' },
+    guwahati: { name: 'ASTC city', full: 'ASTC city · Guwahati', body: '#c1272d', band: '#f4f1ea', seat: '#3d3d46', note: 'Red city buses along GS Road' }, ranchi: { name: 'City bus', full: 'Ranchi city buses', body: '#e36a1f', band: '#f4f1ea', seat: '#3d3d46', note: 'Orange city buses' },
     bhubaneswar: { name: 'Mo Bus', full: 'Mo Bus Bhubaneswar', body: '#2f7d4a', band: '#7fd06a', seat: '#3d3d46', note: 'Smart green Mo Bus city buses' }, raipur: { name: 'City bus', full: 'Raipur city buses', body: '#1f6fb5', band: '#f4f1ea', seat: '#3d3d46', note: 'Blue city buses' } };
   const zoneOf = at => at && at.zone ? at.zone : at ? bb.zoneAt(at.x, at.z, 250) : null;
   const opFor = (at, city) => { const z = zoneOf(at); if (city && z && CITY[z.id]) return CITY[z.id]; return (z && OPS[z.st]) || OPS.MH; };

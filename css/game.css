@@ -671,3 +671,8 @@ body.cine #hudLogo,body:not(.started) #hudLogo{display:none}
 .grow .gtop{display:flex;align-items:center;gap:8px}.grow .gdot{width:12px;height:12px;border-radius:50%;flex:none}
 .grow .gname{flex:1;font-weight:800;font-size:16px;line-height:1.2}.grow .gren{flex:none;background:rgba(255,255,255,.1);border:0;color:inherit;border-radius:10px;padding:6px 10px;font:700 13px var(--f-ui,inherit);cursor:pointer}
 .grow .ginfo{display:block;opacity:.75;margin:4px 0 0 20px}.grow .gbtns{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}.grow .gbtns .buy{flex:1 1 auto;min-width:0;white-space:normal;line-height:1.15;padding-left:10px;padding-right:10px}
+/* Beta v2.01.00: start screen picks a state from a list, then a city; the map only shows where it is */
+#cities .smap svg,#intro .smap svg{max-height:min(26vh,220px)}#cities .smap path{cursor:default}#cities .smap path.ok{fill:#c9a23a}#cities .smap path.ok:hover{fill:#c9a23a}
+.spick .slist,.spick .clist{max-height:min(34vh,300px);overflow-y:auto;overscroll-behavior:contain;padding:2px 2px 4px}
+.spick .slist .chip,.spick .clist .chip{font-size:14px;padding:8px 12px}
+.spick .srow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.spick .srow .note{font-size:12px;color:var(--muted)}

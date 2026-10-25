@@ -6,7 +6,11 @@ const PLABEL={stadium:'Football stadium',bank:'Bank and ATM',food:'Food and chai
 const VALUE={cycle:4000,rickshaw:15000,bike:65000,sportsbike:180000,auto:12000,car:45000,sedan:85000,suv:120000,sports:250000,taxi:40000};
 const PNAME={bank:'Bharat Bay Bank',toilet:'Public toilet',pump:'Petrol pump',cng:'CNG pump',hospital:'Hospital',police:'Police station',rto:'RTO office',jobs:'Rozgar job agent',cars:'Bay Motors',bikes:'Do-Pahiya two-wheelers',clothes:'Kapda Bazaar',furniture:'Ghar Sajao furniture',mobile:'Mobile Point',guns:'Hathiyar Ghar',realty:'Sapna Homes',mechanic:'Mechanic garage',station:'Railway station',bus:'ST bus stand',lodge:'Lodge'};
 const FOODNAME={MH:['Chai tapri','Vada pav stall','Udupi canteen'],GJ:['Chai tapri','Farsan house','Gujarati thali house'],RJ:['Chai tapri','Kachori corner','Rajasthani bhojanalaya'],DD:['Coconut stall','Seafood shack','Beach cafe']};
-function labelTex(t,col){return canvasTex(256,56,x=>{x.font='800 27px "Baloo 2", sans-serif';const w=Math.min(250,x.measureText(t).width+34);const l=(256-w)/2;x.fillStyle='rgba(20,15,38,.84)';x.beginPath();x.moveTo(l+15,3);x.arcTo(l+w,3,l+w,53,15);x.arcTo(l+w,53,l,53,15);x.arcTo(l,53,l,3,15);x.arcTo(l,3,l+w,3,15);x.fill();x.fillStyle=col;x.fillRect(l+11,20,7,16);x.fillStyle='#fff4e2';x.textAlign='center';x.textBaseline='middle';x.fillText(t,128+6,30);},false);}
+// Beta v2.01.00: the name tag over a shop or place is as wide as its name (it used to be cut off after about 15 letters)
+const _lblCtx=document.createElement('canvas').getContext('2d');
+function labelTex(t,col){let fs=27;_lblCtx.font=`800 ${fs}px "Baloo 2", sans-serif`;let tw=_lblCtx.measureText(t).width;while(tw>600&&fs>15){fs--;_lblCtx.font=`800 ${fs}px "Baloo 2", sans-serif`;tw=_lblCtx.measureText(t).width;}
+  const W=Math.max(96,Math.min(660,Math.ceil(tw+48)));const tex=canvasTex(W,56,x=>{x.font=`800 ${fs}px "Baloo 2", sans-serif`;const w=W-6,l=3;x.fillStyle='rgba(20,15,38,.84)';x.beginPath();x.moveTo(l+15,3);x.arcTo(l+w,3,l+w,53,15);x.arcTo(l+w,53,l,53,15);x.arcTo(l,53,l,3,15);x.arcTo(l,3,l+w,3,15);x.fill();
+    x.fillStyle=col;x.fillRect(l+11,20,7,16);x.fillStyle='#fff4e2';x.textAlign='center';x.textBaseline='middle';x.fillText(t,W/2+7,30,W-40);},false);tex.minFilter=THREE.LinearFilter;tex.generateMipmaps=false;tex.userData={w:W};return tex;}
 const ringGeo=new THREE.RingGeometry(1.1,1.5,24);ringGeo.rotateX(-Math.PI/2);const ringMats={};
 function makePoi(o){const col=o.color||PCOL[o.type]||'#ffffff';if(!ringMats[col])ringMats[col]=new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:.85,side:THREE.DoubleSide});
   const ring=new THREE.Mesh(ringGeo,ringMats[col]);ring.position.set(o.x,.36,o.z);scene.add(ring);
@@ -623,6 +627,9 @@ function spawnOwned(i,x,z,h){if(ownedVeh[i])removeVeh(ownedVeh[i]);const c=P.car
 // Put an owned vehicle away in a home garage: it leaves the street and waits there.
 function storeOwned(i,homeId){const v=ownedVeh[i];const c=P.cars[i];if(!c)return;if(v){if(player.veh===v)exitVehicle(true);c.fuel=Math.round(v.fuel);c.hp=Math.round(v.hp);removeVeh(v);ownedVeh[i]=null;}c.x=null;c.z=null;c.garage=homeId;dirty=true;}
 function roadSpotNear(p){const r=nearestRoadPoint(p.x,p.z,300);if(!r)return[p.x,p.z,0];const e=r.e;const nx=e.dz,nz=-e.dx;const o=e.w/2+1.4;return[r.x+nx*o,r.z+nz*o,Math.atan2(e.dx,e.dz)];}
+// Beta v2.01.00: a free spot by the road for a delivered or bought vehicle: it moves along the kerb past vehicles already
+// parked there, so several deliveries line up instead of being stacked on top of each other
+function freeRoadSpot(p,skip){const [x,z,h]=roadSpotNear(p);const fx=Math.sin(h),fz=Math.cos(h);for(const k of [0,1,-1,2,-2,3,-3,4,-4,5,-5,6,-6]){const X=x+fx*k*7.5,Z=z+fz*k*7.5;if(k&&!drivable(X,Z))continue;if(!vehicles.some(v=>v!==skip&&v.m&&v.m.parent&&Math.hypot(v.pos.x-X,v.pos.z-Z)<5.5))return[X,Z,h];}return[x,z,h];}
 
 /* ================= pedestrians, cows, wildlife ================= */
 const peds=[];const pedCols=['#d9483b','#e8a628','#2f7fc1','#9b4fb5','#3aa66b','#ff6fa8','#f4f1ea','#1f8a8a','#c96a2a','#e9e4d6','#5c6b8a','#8b5e3c','#ffffff','#3c4a5c'];

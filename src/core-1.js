@@ -6,7 +6,7 @@ const W=window.WORLD,LM=window.LANDMARKS;
 // Beta v2.00.00: the map reaches north of the old top edge (Delhi, Punjab, the Himalaya), so z can be negative down to W.Z0
 const Z0=W.Z0||0;
 try{await Promise.race([document.fonts.load('800 48px "Baloo 2"'),new Promise(r=>setTimeout(r,1500))]);}catch(e){}
-const VERSION='Beta v2.00.00';
+const VERSION='Beta v2.01.00';
 
 /* ================= storage + config ================= */
 const store={get(k){try{return JSON.parse(localStorage.getItem(k));}catch(e){return null;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}};
@@ -101,7 +101,12 @@ const STYLES={metro:{cols:['#efe3c8','#f2b8a2','#bfe0cf','#a9cfe8','#e8c070','#f
   ladakh:{cols:['#f3efe6','#efe7d8','#e8dcc6','#f6f2ea'],h:[4,8],old:true,lots:3},
   kashmir:{cols:['#c9a27a','#b88d66','#d8bb93','#a87d58','#e0cfb0'],h:[6,12],old:true,lots:2,cottage:true},
   mughal:{cols:['#c9734f','#d98a62','#efe3c8','#e3b48a','#f2d7a7'],h:[6,16],old:true,lots:3,chhatri:.18,dome:.08},
-  awadh:{cols:['#efe0c0','#e8cfa0','#d9b98a','#f2e6cf','#e6c79a'],h:[6,15],old:true,lots:3,dome:.12}};
+  awadh:{cols:['#efe0c0','#e8cfa0','#d9b98a','#f2e6cf','#e6c79a'],h:[6,15],old:true,lots:3,dome:.12},
+  // Beta v2.01.00: the East and the North-East
+  kolkata:{cols:['#d9a07a','#e8c98f','#c9d6c0','#f0e2c4','#c98a6a','#e6d3b3','#b9c9d9'],h:[8,26],old:true,lots:3,tower:.03},
+  bihar:{cols:['#efe3c8','#e9d6bd','#f2c6a0','#d9c7a8','#e3b48a','#cfd8d6'],h:[6,16],old:true,lots:3},
+  assam:{cols:['#f4f1ea','#e6d8be','#cfe3c8','#d7e6ef','#f2d7a7'],h:[4,10],old:true,lots:3,cottage:true},
+  nehill:{cols:['#e8c070','#a9cfe8','#f2b8a2','#bfe0cf','#f4f1ea','#d9cfe0','#e98b7f'],h:[6,14],old:true,lots:2,cottage:true}};
 
 /* ================= static batching in chunks ================= */
 const CH=400;const chunks=new Map();const farGroups=[];let lmCollect=null;
@@ -109,9 +114,9 @@ function chunkOf(x,z){const k=Math.floor(x/CH)+','+Math.floor(z/CH);let c=chunks
 function addStatic(g,mat,cast=true,receive=true){if(!g.boundingBox)g.computeBoundingBox();const b=g.boundingBox;const x=(b.min.x+b.max.x)/2,z=(b.min.z+b.max.z)/2;
   if(lmCollect){lmCollect.push([g,mat,cast,receive]);return;}const c=chunkOf(x,z);const key=mat.uuid+(cast?1:0)+(receive?1:0);let p=c.pend.get(key);if(!p){p={mat,geoms:[],cast,receive};c.pend.set(key,p);}p.geoms.push(g);}
 function merge(geoms){let vc=0,ic=0;for(const g of geoms){vc+=g.attributes.position.count;ic+=g.index?g.index.count:g.attributes.position.count;}
-  const pos=new Float32Array(vc*3),nor=new Float32Array(vc*3),uv=new Float32Array(vc*2),idx=new Uint32Array(ic);let vo=0,io=0;
-  for(const g of geoms){const p=g.attributes.position,n=g.attributes.normal,u=g.attributes.uv;pos.set(p.array,vo*3);if(n)nor.set(n.array,vo*3);if(u)uv.set(u.array,vo*2);if(g.index){const a=g.index.array;for(let i=0;i<a.length;i++)idx[io++]=a[i]+vo;}else{for(let i=0;i<p.count;i++)idx[io++]=vo+i;}vo+=p.count;g.dispose();}
-  const o=new THREE.BufferGeometry();o.setAttribute('position',new THREE.BufferAttribute(pos,3));o.setAttribute('normal',new THREE.BufferAttribute(nor,3));o.setAttribute('uv',new THREE.BufferAttribute(uv,2));o.setIndex(new THREE.BufferAttribute(idx,1));o.computeBoundingSphere();return o;}
+  const pos=new Float32Array(vc*3),nor=new Float32Array(vc*3),uv=new Float32Array(vc*2),idx=new Uint32Array(ic),hasC=!!geoms[0].attributes.color,col=hasC?new Uint8Array(vc*3):null;let vo=0,io=0;
+  for(const g of geoms){const p=g.attributes.position,n=g.attributes.normal,u=g.attributes.uv;pos.set(p.array,vo*3);if(n)nor.set(n.array,vo*3);if(u)uv.set(u.array,vo*2);if(hasC)col.set(g.attributes.color.array,vo*3);if(g.index){const a=g.index.array;for(let i=0;i<a.length;i++)idx[io++]=a[i]+vo;}else{for(let i=0;i<p.count;i++)idx[io++]=vo+i;}vo+=p.count;g.dispose();}
+  const o=new THREE.BufferGeometry();o.setAttribute('position',new THREE.BufferAttribute(pos,3));o.setAttribute('normal',new THREE.BufferAttribute(nor,3));o.setAttribute('uv',new THREE.BufferAttribute(uv,2));if(hasC)o.setAttribute('color',new THREE.BufferAttribute(col,3,true));o.setIndex(new THREE.BufferAttribute(idx,1));o.computeBoundingSphere();return o;}
 // Beta v1.01.30: the merged city and landscape geometry never changes, so once it is on the graphics card the copy in
 // memory is let go (about a third less memory, which matters on phones). Its bounds are worked out first.
 function lean(g){g.computeBoundingBox();if(!g.boundingSphere)g.computeBoundingSphere();const free=function(){this.array=null;};for(const k in g.attributes)g.attributes[k].onUpload(free);if(g.index)g.index.onUpload(free);return g;}
@@ -127,14 +132,23 @@ function packMesh(geoms,mat,f){const g=merge(geoms);if(!f.ok)return new THREE.Me
   for(let i=0,k=0;i<n;i++,k+=3){q[k]=Math.round((pa[k]-f.cx)*ix);q[k+1]=Math.round((pa[k+1]-f.cy)*iy);q[k+2]=Math.round((pa[k+2]-f.cz)*iz);
     // the normal in the scaled box: multiply by the scale, the shader divides it out again
     let a=na[k]*f.sx,b=na[k+1]*f.sy,c=na[k+2]*f.sz;const L=Math.hypot(a,b,c)||1;qn[k]=Math.round(a/L*127);qn[k+1]=Math.round(b/L*127);qn[k+2]=Math.round(c/L*127);}
-  const o=new THREE.BufferGeometry();o.setAttribute('position',new THREE.BufferAttribute(q,3,true));o.setAttribute('normal',new THREE.BufferAttribute(qn,3,true));if(hasTex(mat))o.setAttribute('uv',g.attributes.uv);
+  const o=new THREE.BufferGeometry();o.setAttribute('position',new THREE.BufferAttribute(q,3,true));o.setAttribute('normal',new THREE.BufferAttribute(qn,3,true));if(hasTex(mat))o.setAttribute('uv',g.attributes.uv);if(g.attributes.color)o.setAttribute('color',g.attributes.color);
   const ia=g.index.array;o.setIndex(new THREE.BufferAttribute(n<65536?Uint16Array.from(ia):ia,1));g.dispose();
   o.boundingBox=new THREE.Box3(new THREE.Vector3(-1,-1,-1),new THREE.Vector3(1,1,1));o.boundingSphere=new THREE.Sphere(new THREE.Vector3(),1.7321);
   const free=function(){this.array=null;};for(const k in o.attributes)o.attributes[k].onUpload(free);o.index.onUpload(free);
   const m=new THREE.Mesh(o,mat);m.position.set(f.cx,f.cy,f.cz);m.scale.set(f.sx,f.sy,f.sz);return m;}
-function flushStatic(){for(const c of chunks.values()){const all=[];for(const p of c.pend.values())all.push(...p.geoms);const f=all.length?packFrame(all):null;for(const p of c.pend.values()){if(!p.geoms.length)continue;const m=packMesh(p.geoms,p.mat,f);m.castShadow=p.cast;m.receiveShadow=p.receive;m.matrixAutoUpdate=false;m.updateMatrix();c.group.add(m);}c.pend.clear();}}
-function flushFar(list,x,z){const by=new Map();for(const [g,mat,cast,recv] of list){const k=mat.uuid+(cast?1:0);let p=by.get(k);if(!p){p={mat,geoms:[],cast,recv};by.set(k,p);}p.geoms.push(g);}
-  const grp=new THREE.Group();const f=packFrame(list.map(a=>a[0]));for(const p of by.values()){const m=packMesh(p.geoms,p.mat,f);m.castShadow=p.cast;m.receiveShadow=p.recv;m.matrixAutoUpdate=false;m.updateMatrix();grp.add(m);}scene.add(grp);farGroups.push({group:grp,x,z});}
+// Beta v2.01.00: plain single-colour materials in a chunk are merged into one mesh with the colour stored per point
+// (vertex colours). A chunk used to hold a mesh for every colour; with the whole country that was over 50,000 meshes
+// and about 100 MB just for the mesh objects. Materials the game changes later (the street lamp glow) are left as they are.
+let VCM=null,MKEEP=null;
+function plainMat(m){if(!MKEEP){MKEEP=new Set([M.lamp]);VCM=new THREE.MeshLambertMaterial({vertexColors:true});}
+  return !!m&&m.type==='MeshLambertMaterial'&&!hasTex(m)&&!m.transparent&&!m.vertexColors&&m.side===THREE.FrontSide&&m.opacity===1&&(!m.emissive||m.emissive.getHex()===0)&&!MKEEP.has(m)&&!(m.userData&&m.userData.keep);}
+function tint(g,col){const n=g.attributes.position.count,a=new Uint8Array(n*3),r=Math.round(col.r*255),gg=Math.round(col.g*255),b=Math.round(col.b*255);for(let i=0;i<n*3;i+=3){a[i]=r;a[i+1]=gg;a[i+2]=b;}g.setAttribute('color',new THREE.BufferAttribute(a,3,true));}
+function batchBy(entries){const out=new Map();for(const e of entries){const plain=plainMat(e.mat);const k=plain?'vc'+(e.cast?1:0)+(e.receive?1:0):e.mat.uuid+(e.cast?1:0)+(e.receive?1:0);let p=out.get(k);if(!p){p={mat:plain?VCM:e.mat,geoms:[],cast:e.cast,receive:e.receive};out.set(k,p);}
+  for(const g of e.geoms){if(plain)tint(g,e.mat.color);else if(g.attributes.color)g.deleteAttribute('color');p.geoms.push(g);}}return out.values();}
+function flushStatic(){for(const c of chunks.values()){const all=[];for(const p of c.pend.values())all.push(...p.geoms);const f=all.length?packFrame(all):null;for(const p of batchBy(c.pend.values())){if(!p.geoms.length)continue;const m=packMesh(p.geoms,p.mat,f);m.castShadow=p.cast;m.receiveShadow=p.receive;m.matrixAutoUpdate=false;m.updateMatrix();c.group.add(m);}c.pend.clear();}}
+function flushFar(list,x,z){const by=new Map();for(const [g,mat,cast,recv] of list){const k=mat.uuid+(cast?1:0);let p=by.get(k);if(!p){p={mat,geoms:[],cast,receive:recv};by.set(k,p);}p.geoms.push(g);}
+  const grp=new THREE.Group();const f=packFrame(list.map(a=>a[0]));for(const p of batchBy(by.values())){const m=packMesh(p.geoms,p.mat,f);m.castShadow=p.cast;m.receiveShadow=p.receive;m.matrixAutoUpdate=false;m.updateMatrix();grp.add(m);}scene.add(grp);farGroups.push({group:grp,x,z});}
 function updChunks(px,pz){const r=scene.fog.far+120,rf=Math.min(2600,scene.fog.far*2.6+300);for(const c of chunks.values()){c.group.visible=Math.abs(c.cx-px)<r+CH/2&&Math.abs(c.cz-pz)<r+CH/2;}for(const f of farGroups){f.group.visible=Math.hypot(f.x-px,f.z-pz)<rf;}}
 function box(w,h,d,x,y,z,mat,cast,recv){const g=BoxG(w,h,d);g.translate(x,y,z);addStatic(g,mat,cast!==false,recv!==false);return g;}
 function boxRot(w,h,d,x,y,z,ry,mat,cast,recv){const g=BoxG(w,h,d);g.rotateY(ry);g.translate(x,y,z);addStatic(g,mat,cast!==false,recv!==false);return g;}
@@ -224,7 +238,9 @@ const TG=40;
 // triangles drawn every frame). Each vertex height and colour is the same as before.
 {const TT=800,mat=new THREE.MeshLambertMaterial({vertexColors:true});const nTx=Math.ceil(W.W/TT),nTz=Math.ceil((W.H-Z0)/TT);const hgt=(x,z)=>isLand(x,z)||onIsland(x,z)||isForeign(x,z)?0:-4;
   for(let ti=0;ti<nTx;ti++)for(let tj=0;tj<nTz;tj++){const x0=ti*TT,z0=Z0+tj*TT,w=Math.min(TT,W.W-x0),d=Math.min(TT,W.H-z0);const g=new THREE.PlaneGeometry(w,d,Math.max(1,Math.round(w/TG)),Math.max(1,Math.round(d/TG)));g.rotateX(-Math.PI/2);g.translate(w/2,0,d/2);
-    const pos=g.attributes.position;const col=new Float32Array(pos.count*3);for(let i=0;i<pos.count;i++){const x=pos.getX(i)+x0,z=pos.getZ(i)+z0;pos.setY(i,hgt(x,z));biomeColor(x,z,cA);col[i*3]=cA.r;col[i*3+1]=cA.g;col[i*3+2]=cA.b;}
+    const pos=g.attributes.position;const col=new Float32Array(pos.count*3);let anyL=0;for(let i=0;i<pos.count;i++){const x=pos.getX(i)+x0,z=pos.getZ(i)+z0;const hh=hgt(x,z);pos.setY(i,hh);if(hh===0)anyL=1;biomeColor(x,z,cA);col[i*3]=cA.r;col[i*3+1]=cA.g;col[i*3+2]=cA.b;}
+    // Beta v2.01.00: tiles that are all open sea are hidden under the sea plane anyway, so they are not built
+    if(!anyL){g.dispose();continue;}
     g.setAttribute('color',new THREE.BufferAttribute(col,3));g.computeVertexNormals();
     // normals along the tile edges look across the edge too, so neighbouring tiles shade the same
     const nor=g.attributes.normal;for(let i=0;i<pos.count;i++){const lx=pos.getX(i),lz=pos.getZ(i);if(lx>.1&&lx<w-.1&&lz>.1&&lz<d-.1)continue;const x=lx+x0,z=lz+z0;const sx=hgt(x-TG,z)-hgt(x+TG,z),sz=hgt(x,z-TG)-hgt(x,z+TG);const n=new THREE.Vector3(sx,2*TG,sz).normalize();nor.setXYZ(i,n.x,n.y,n.z);}
@@ -253,7 +269,7 @@ function logoTex(w,h,line){const c=document.createElement('canvas');c.width=w;c.
   const draw=()=>{const g=x.createLinearGradient(0,0,w,0);g.addColorStop(0,'#123d4c');g.addColorStop(1,'#1d5f73');x.fillStyle=g;x.fillRect(0,0,w,h);const sq=Math.min(h*.92,w*.45);if(LOGO_IMG.complete&&LOGO_IMG.naturalWidth)x.drawImage(LOGO_IMG,(h-sq)/2,(h-sq)/2,sq,sq);
     const tx=(h-sq)/2*2+sq,tw=w-tx-h*.06;if(tw>w*.25){x.fillStyle='#ffc93c';x.textAlign='left';x.textBaseline='middle';let f=Math.round(h*.24);x.font=`900 ${f}px "Baloo 2",sans-serif`;while(x.measureText('INDIA BAY').width>tw&&f>10){f--;x.font=`900 ${f}px "Baloo 2",sans-serif`;}x.fillText('INDIA BAY',tx,h*.38);x.fillStyle='#fff6d8';let f2=Math.round(h*.11);x.font=`700 ${f2}px "Baloo 2",sans-serif`;while(x.measureText(line).width>tw&&f2>8){f2--;x.font=`700 ${f2}px "Baloo 2",sans-serif`;}x.fillText(line,tx,h*.62);}t.needsUpdate=true;};
   draw();if(!(LOGO_IMG.complete&&LOGO_IMG.naturalWidth))logoWait.push(draw);return t;}
-function signTex(t,fg,bg,w=512,h=128){return canvasTex(w,h,x=>{x.fillStyle=bg;x.fillRect(0,0,w,h);x.strokeStyle=fg;x.lineWidth=Math.max(4,h/20);x.strokeRect(h/14,h/14,w-h/7,h-h/7);x.fillStyle=fg;x.textAlign='center';x.textBaseline='middle';const L=String(t).split('|').map(q=>q.trim()).filter(Boolean).slice(0,2);if(L.length>1){const fit=(q,sz,wt)=>{x.font=`${wt} ${sz}px "Baloo 2", sans-serif`;while(x.measureText(q).width>w*.8&&sz>8){sz-=2;x.font=`${wt} ${sz}px "Baloo 2", sans-serif`;}return sz;};const f1=fit(L[0],Math.round(h*.34),800);x.fillText(L[0],w/2,h*.4);fit(L[1],Math.round(Math.max(Math.min(h*.2,f1*1.05),h*.14)),700);x.fillText(L[1],w/2,h*.71);return;}t=L[0]||'';let s=h*.55;x.font=`800 ${s}px "Baloo 2", sans-serif`;while(x.measureText(t).width>w*.86&&s>12){s-=4;x.font=`800 ${s}px "Baloo 2", sans-serif`;}x.fillText(t,w/2,h*.56);},false);}
+function signTex(t,fg,bg,w=512,h=128){return canvasTex(w,h,x=>{x.fillStyle=bg;x.fillRect(0,0,w,h);x.strokeStyle=fg;x.lineWidth=Math.max(4,h/20);x.strokeRect(h/14,h/14,w-h/7,h-h/7);x.fillStyle=fg;x.textAlign='center';x.textBaseline='middle';const L=String(t).split('|').map(q=>q.trim()).filter(Boolean).slice(0,2);if(L.length>1){const fit=(q,sz,wt)=>{x.font=`${wt} ${sz}px "Baloo 2", sans-serif`;while(x.measureText(q).width>w*.8&&sz>8){sz-=2;x.font=`${wt} ${sz}px "Baloo 2", sans-serif`;}return sz;};const f1=fit(L[0],Math.round(h*.34),800);x.fillText(L[0],w/2,h*.4,w*.9);fit(L[1],Math.round(Math.max(Math.min(h*.2,f1*1.05),h*.14)),700);x.fillText(L[1],w/2,h*.71,w*.9);return;}t=L[0]||'';let s=h*.55;x.font=`800 ${s}px "Baloo 2", sans-serif`;while(x.measureText(t).width>w*.86&&s>12){s-=4;x.font=`800 ${s}px "Baloo 2", sans-serif`;}x.fillText(t,w/2,h*.56,w*.9);},false);}
 // a text board readable from both sides: the back gets its own copy, so it is never seen mirrored (Beta v1.01.30)
 function twoSided(m){const mt=m.material;if(!mt||!mt.map)return m;mt.side=THREE.FrontSide;const b=new THREE.Mesh(m.geometry,mt.clone());b.material.side=THREE.FrontSide;b.rotation.y=Math.PI;b.position.z=-.012;b.userData=m.userData;m.add(b);return m;}
 function addSign(text,x,y,z,ry,w,h,fg,bg){const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:signTex(text,fg,bg,512,Math.round(512*h/w))}));twoSided(m);m.position.set(x,y,z);m.rotation.y=ry;scene.add(m);return m;}
@@ -399,11 +415,14 @@ function nearHighway(x,z,r){for(const id of edgesNear(x,z)){const e=EDGES[id];if
 /* services are planned before buildings so lots can be reserved */
 const pois=[];const blocks=[];const zoneData=new Map();
 const SVC_LOT=new Set(['pump','cng','station','bus']);
+const GUN_ZONE=new Set();{const by={};for(const z of W.zones){const sc={big:3,mid:2,small:1}[z.size]*1000+z.nx*z.nz+(W.startZones&&W.startZones[z.st]===z.id?500:0);if(!by[z.st]||sc>by[z.st][0])by[z.st]=[sc,z.id];}for(const k in by)GUN_ZONE.add(by[k][1]);}
 for(const z of W.zones){const zd={z,blocks:[],tallRoofs:[],slots:[]};zoneData.set(z.id,zd);
   for(let i=0;i<z.nx;i++)for(let j=0;j<z.nz;j++){const bx=z.x0+i*80+40,bz=z.z0+j*80+40;const sp=z.specials[i+','+j];const land=!isWater(bx,bz)&&!isWater(bx-28,bz-28)&&!isWater(bx+28,bz+28)&&!isWater(bx-28,bz+28)&&!isWater(bx+28,bz-28);
     const b={zone:z,i,j,x:bx,z:bz,sp,land,reserved:new Set(),open:false,hasBld:false};zd.blocks.push(b);blocks.push(b);}
   const free=zd.blocks.filter(b=>b.land&&!b.sp&&!nearHighway(b.x,b.z,8));const r2=mulberry32(z.x0*7+z.z0);const sides=['n','s','e','w'];
   let svc=(W.serviceSets[z.size]||W.serviceSets.small).slice();if(z.station&&!svc.includes('station'))svc.push('station');
+  // Beta v2.01.00: every state and union territory has a gun shop (Hathiyar Ghar), in its biggest city, placed early so it always fits
+  if(GUN_ZONE.has(z.id)){svc=svc.filter(q=>q!=='guns');svc.splice(3,0,'guns');}
   if(z.id==='mumbai')svc=svc.filter(s=>s!=='station');
   const used=new Set();
   for(const type of svc){if(!free.length)break;let b,side,t,tries=0;do{b=free[Math.floor(r2()*free.length)];side=sides[Math.floor(r2()*4)];t=[-18,0,18][Math.floor(r2()*3)];tries++;}while((used.has(b.i+','+b.j+side+t)||(SVC_LOT.has(type)&&b.reserved.size>=2))&&tries<40);
@@ -543,7 +562,7 @@ for(const f of W.forests){const mat=f.kind==='dry'?M.treeDry:M.treeDark;for(let 
 for(const g of W.palms||[]){for(let i=0;i<g.n;i++){const a=rnd()*6.283,rr=Math.sqrt(rnd());const x=g.x+Math.cos(a)*g.rx*rr,z=g.z+Math.sin(a)*g.rz*rr;if(isWater(x,z)||roadAt(x,z,4)||zoneAt(x,z,6))continue;palm(x,z);}}
 for(let i=0,nT=Math.round(2600*(W.H-Z0)/11000);i<nT;i++){const x=R(50,W.W-50),z=R(Z0+50,W.H-50);if(isWater(x,z)||roadAt(x,z,4)||zoneAt(x,z,10))continue;let skip=isForeign(x,z)&&rnd()<.7;if(!skip)for(const b of W.biomes)if((b.kind==='desert'||b.kind==='rann'||b.kind==='colddesert'||b.kind==='snow'||b.kind==='mine')&&inE(b,x,z)<1){skip=rnd()<(b.kind==='desert'||b.kind==='rann'?.85:.97);break;}if(skip)continue;tree(x,z,R(.7,1.2));}
 // Beta v2.00.00: the border fence (Pakistan, the LoC and LAC, Nepal): posts every 10 m and two wires
-if(W.borderLine){const fm=LMat('#5d6066');const P=W.borderLine;for(let k=0;k<P.length-1;k++){const [ax,az]=P[k],[bx,bz]=P[k+1];const L=Math.hypot(bx-ax,bz-az);if(L<1)continue;const dx=(bx-ax)/L,dz=(bz-az)/L,ang=Math.atan2(dx,dz);
+if(W.borderLine){const fm=LMat('#5d6066');for(const P of [W.borderLine].concat(W.borderLines||[]))for(let k=0;k<P.length-1;k++){const [ax,az]=P[k],[bx,bz]=P[k+1];const L=Math.hypot(bx-ax,bz-az);if(L<1)continue;const dx=(bx-ax)/L,dz=(bz-az)/L,ang=Math.atan2(dx,dz);
   for(let t=0;t<L;t+=10){const x=ax+dx*t,z=az+dz*t;box(.16,2.6,.16,x,1.3,z,fm,false,false);}for(let t=0;t<L;t+=120){const l=Math.min(120,L-t),mx=ax+dx*(t+l/2),mz=az+dz*(t+l/2);for(const y of [1.1,2.3])boxRot(.05,.06,l,mx,y,mz,ang,fm,false,false);}}}
 for(let i=0;i<14;i++){const bx=R(2350,2470),bz=R(8150,8900),ry=R(0,3);if(isLand(bx,bz))continue;const g=BoxG(2.2,1,7);g.rotateY(ry);g.translate(bx,-0.3,bz);addStatic(g,i%2?M.boat:M.boat2);(window.IB_BOATS=window.IB_BOATS||[]).push({x:bx,z:bz,ry,kind:'fish',y:.2});const c=BoxG(1.6,1.2,2);c.rotateY(ry);c.translate(bx,0.6,bz);addStatic(c,M.cream);}
 

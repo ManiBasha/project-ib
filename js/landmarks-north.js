@@ -292,8 +292,8 @@
     for (const s of [-1, 1]) c.box(4, 3, 8, x + s * 14, Y + 1.5, z + 10, mat(c, '#e0b040')); c.cone(6, 7, x - 18, Y + 3.5, z - 18, ore, 8); return { open: true }; };
 
   /* ---------------- Chhattisgarh, Odisha ---------------- */
-  L.mantralaya = (c, x, z) => { const gl = c.M.glassBox || mat(c, '#8fb3c9'), cr = mat(c, '#e8e2d6'); ground(c, x, z, 64, 64, '#cfc8b8'); c.box(40, 26, 16, x, Y + 13, z - 10, cr); for (let i = 0; i < 8; i++) c.box(3.6, 22, .3, x - 17 + i * 4.8, Y + 13, z - 1.8, gl);
-    c.box(44, 1, 20, x, Y + 26.5, z - 10, cr); c.flag(x, Y + 27, z - 10); label(c, 'MANTRALAYA · NAVA RAIPUR', x, Y + 2, z + 30, 0, 20, '#ffffff', '#33475b'); c.col(x, z - 10, 20, 8); return { open: true }; };
+  L.mantralaya = (c, x, z, o) => { const gl = c.M.glassBox || mat(c, '#8fb3c9'), cr = mat(c, '#e8e2d6'); ground(c, x, z, 64, 64, '#cfc8b8'); c.box(40, 26, 16, x, Y + 13, z - 10, cr); for (let i = 0; i < 8; i++) c.box(3.6, 22, .3, x - 17 + i * 4.8, Y + 13, z - 1.8, gl);
+    c.box(44, 1, 20, x, Y + 26.5, z - 10, cr); c.flag(x, Y + 27, z - 10); label(c, (o && o.arg) || 'MANTRALAYA · NAVA RAIPUR', x, Y + 2, z + 30, 0, 22, '#ffffff', '#33475b'); c.col(x, z - 10, 20, 8); return { open: true }; };
   L.jungleSafari = (c, x, z) => { ground(c, x, z, 64, 64, '#6a9a44'); trees(c, x, z, 18, 28, 1.2); c.box(4, 6, 4, x - 22, Y + 3, z + 26, c.M.wood); c.box(4, 6, 4, x + 22, Y + 3, z + 26, c.M.wood); c.box(48, 2, 4, x, Y + 7, z + 26, c.M.wood);
     label(c, 'NAVA RAIPUR JUNGLE SAFARI', x, Y + 9, z + 28.2, 0, 22, '#ffffff', '#3b5d2a'); waterPool(c, x + 8, z - 8, 18, 12); return { open: true }; };
   L.purkhouti = (c, x, z) => { ground(c, x, z, 64, 64, '#a8946a'); for (let i = 0; i < 6; i++) { const hx = x - 20 + (i % 3) * 20, hz = z - 12 + Math.floor(i / 3) * 22; c.box(9, 4, 7, hx, Y + 2, hz, mat(c, ['#c8a46a', '#b88a5a', '#d8b88a'][i % 3])); c.roof(10, 2.4, 8, hx, Y + 4, hz, mat(c, '#8a4a2a')); c.col(hx, hz, 4.5, 3.5); }

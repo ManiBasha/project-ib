@@ -2,7 +2,7 @@
 window.BBFeatures.push(function (bb) {
   const W = bb.WORLD, P = () => bb.P;
   const STATES = [['JK', 'Jammu & Kashmir', 33.8, 75.0, 'north', 7], ['LA', 'Ladakh', 34.4, 77.8, 'north', 8], ['HP', 'Himachal Pradesh', 31.9, 77.2, 'north', 6], ['PB', 'Punjab', 30.9, 75.4, 'north', 6], ['CH', 'Chandigarh', 30.7, 76.8, 'north', 3], ['UK', 'Uttarakhand', 30.1, 79.1, 'north', 6], ['HR', 'Haryana', 29.1, 76.2, 'north', 6], ['DL', 'Delhi', 28.6, 77.2, 'north', 3.5],
-    ['RJ', 'Rajasthan', 26.6, 73.8, 'west', 11], ['GJ', 'Gujarat', 22.6, 71.6, 'west', 9], ['MH', 'Maharashtra', 19.4, 75.7, 'west', 10], ['DD', 'Daman & Diu', 20.4, 72.0, 'west', 3], ['DN', 'Dadra & Nagar Haveli', 20.2, 73.2, 'west', 3],
+    ['RJ', 'Rajasthan', 26.6, 73.8, 'west', 11], ['GJ', 'Gujarat', 22.6, 71.6, 'west', 9], ['MH', 'Maharashtra', 19.4, 75.7, 'west', 10], ['DD', 'Dadra & Nagar Haveli and Daman & Diu', 20.3, 72.6, 'west', 3],
     ['UP', 'Uttar Pradesh', 27.0, 80.9, 'central', 10], ['MP', 'Madhya Pradesh', 23.5, 78.5, 'central', 11], ['CG', 'Chhattisgarh', 21.3, 81.9, 'central', 8],
     ['BR', 'Bihar', 25.6, 85.6, 'east', 7], ['JH', 'Jharkhand', 23.6, 85.3, 'east', 6.5], ['WB', 'West Bengal', 23.4, 87.9, 'east', 7], ['OD', 'Odisha', 20.5, 84.4, 'east', 8],
     ['SK', 'Sikkim', 27.5, 88.5, 'northeast', 3], ['AS', 'Assam', 26.2, 92.9, 'northeast', 7], ['AR', 'Arunachal Pradesh', 28.0, 94.6, 'northeast', 7], ['NL', 'Nagaland', 26.1, 94.4, 'northeast', 3.5], ['MN', 'Manipur', 24.8, 93.9, 'northeast', 3.5], ['MZ', 'Mizoram', 23.2, 92.8, 'northeast', 3.5], ['TR', 'Tripura', 23.8, 91.6, 'northeast', 3], ['ML', 'Meghalaya', 25.5, 91.3, 'northeast', 4],
@@ -204,9 +204,11 @@ window.BBFeatures.push(function (bb) {
     delhi: [['Kashmere Gate', 4, 0], ['Chandni Chowk', 2, 1], ['Rajiv Chowk', 3, 2], ['Central Secretariat', 4, 3], ['Hauz Khas', 2, 4], ['Saket', 4, 5]], gurugram: [['Cyber City', 1, 1], ['MG Road', 2, 2], ['Millennium City Centre', 3, 3]],
     noida: [['Botanical Garden', 1, 0], ['Sector 18', 2, 1], ['Noida City Centre', 1, 2]], lucknow: [['Charbagh', 4, 1], ['Hazratganj', 3, 2], ['Munshi Pulia', 5, 4]], kanpur: [['IIT Kanpur', 0, 0], ['Moti Jheel', 2, 1], ['Nayaganj', 3, 2]],
     agra: [['Taj East Gate', 4, 1], ['Agra Fort', 2, 1], ['RBS College', 1, 3]], meerut: [['Meerut South', 1, 1], ['Begumpul', 2, 0]], indore: [['Radisson Square', 3, 0], ['Rajwada', 2, 1], ['Palasia', 4, 2]],
-    bhopal: [['AIIMS', 0, 3], ['Rani Kamlapati', 2, 2], ['Subhash Nagar', 3, 1]] };
+    bhopal: [['AIIMS', 0, 3], ['Rani Kamlapati', 2, 2], ['Subhash Nagar', 3, 1]],
+    // Beta v2.01.00: the east
+    kolkata: [['Dum Dum', 5, 0], ['Shyambazar', 4, 1], ['Esplanade', 4, 3], ['Park Street', 4, 4], ['Kalighat', 3, 5]], patna: [['Bhoothnath', 4, 1], ['Zero Mile', 4, 2], ['New ISBT', 5, 3]] };
   const MLINE = { mumbai: 'Mumbai Metro', pune: 'Pune Metro', ahmedabad: 'Ahmedabad Metro', jaipur: 'Jaipur Metro', bengaluru: 'Namma Metro', kochi: 'Kochi Metro', chennai: 'Chennai Metro', hyderabad: 'Hyderabad Metro',
-    delhi: 'Delhi Metro', gurugram: 'Rapid Metro Gurugram', noida: 'Noida Metro (Aqua line)', lucknow: 'Lucknow Metro', kanpur: 'Kanpur Metro', agra: 'Agra Metro', meerut: 'Meerut Metro', indore: 'Indore Metro', bhopal: 'Bhopal Metro' };
+    delhi: 'Delhi Metro', gurugram: 'Rapid Metro Gurugram', noida: 'Noida Metro (Aqua line)', lucknow: 'Lucknow Metro', kanpur: 'Kanpur Metro', agra: 'Agra Metro', meerut: 'Meerut Metro', indore: 'Indore Metro', bhopal: 'Bhopal Metro', kolkata: 'Kolkata Metro', patna: 'Patna Metro' };
   const T3 = bb.THREE; const mKiosk = bb.LMat('#6b4fa0'), mRoof = bb.LMat('#e6e1f2'), mPole = bb.LMat('#3b3a40');
   for (const [zid, list] of Object.entries(METRO)) { const z = W.zones.find(q => q.id === zid); if (!z) continue;
     for (const [n, i, j] of list) { const bx = z.x0 + i * 80 + 40, bz = z.z0 + j * 80; const r = bb.nearestRoadPoint(bx, bz, 120); if (!r) continue; const e = r.e; const nx = e.dz, nz = -e.dx; const o = e.w / 2 + 2.6;

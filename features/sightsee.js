@@ -1,7 +1,7 @@
 // Attractions come alive (Beta v1.01.23). At every famous place (forts, temples, falls, beaches, statues):
 //   • a parking lot beside the road with marked bays, a P sign and parked cars, buses and bikes of other visitors
-//   • a visitor centre you can walk into: about the place, an entry ticket, a guided tour (the camera flies round
-//     the place while the guide talks), souvenirs and a snack counter
+//   • a visitor centre you can walk into: about the place, an entry ticket, a guided walking tour (a guide walks you
+//     round on foot and tells you about each stop), souvenirs and a snack counter
 //   • sightseers: families and friends walking round, stopping to take photos and selfies, looking at the view.
 // Everything near you is built when you come close and cleared when you leave, so the game stays light.
 window.BBFeatures.push(function (bb) {
@@ -16,6 +16,40 @@ window.BBFeatures.push(function (bb) {
     atalTunnel: 'At about 9 km, one of the longest highway tunnels in the world above 3,000 m. It joins Manali to Lahaul all year round, under the Rohtang Pass.',
     chenabBridge: 'The world\'s highest railway arch bridge, about 359 m above the Chenab river, on the line from Katra to Srinagar.',
     passSign: 'A high Himalayan pass kept open by the Border Roads Organisation. Go slowly: the air is thin up here.', icestupa: 'An artificial glacier: winter water frozen into a cone, which melts slowly in spring to water the fields.' });
+  // Beta v2.01.00: the east and north-east
+  Object.assign(NAMES, { howrahBridge: 'Howrah Bridge', tigerHill: 'Tiger Hill', batasiaLoop: 'Batasia Loop', sundarbansTower: 'Sundarbans Watchtower', stoneMonoliths: 'Nartiang Monoliths', sherShahTomb: "Sher Shah Suri's Tomb", reiekVillage: 'Reiek Heritage Village', poloStatue: 'Marjing Polo Statue', phumdi: 'Loktak Lake phumdis', oilRig: 'Digboi Oil Field', neermahal: 'Neermahal', maidams: 'Charaideo Maidams', kvParadise: 'Khonoma Village', kisamaVillage: 'Kisama Heritage Village', jhariaFire: 'Jharia Coalfield', caneBridge: 'Cane suspension bridge', ashokaPillar: 'Ashoka Pillar', bambooTower: 'Bamboo watchtower', dakhilDarwaza: 'Dakhil Darwaza', cemetery: 'War cemetery', mangrove: 'Mangrove forest' });
+  Object.assign(FACTS, { howrahBridge: 'A cantilever bridge over the Hooghly opened in 1943, built without a single nut or bolt: it is held together by rivets. Around a hundred thousand vehicles cross it each day.',
+    tigerHill: 'At 2,567 m above Darjeeling. At sunrise the snows of Kangchenjunga turn pink and gold, and on a clear day you can see Everest far to the west.',
+    batasiaLoop: 'The Darjeeling Himalayan Railway, a UNESCO World Heritage Site, turns a full spiral here to gain height, round a garden with a war memorial.',
+    sundarbansTower: 'The largest mangrove forest in the world, shared with Bangladesh, and home of the Royal Bengal tiger that swims between islands. A UNESCO World Heritage Site.',
+    stoneMonoliths: 'Tall standing stones raised by the Jaintia kings, some over 8 m high: one of the largest groups of monoliths in the world.',
+    sherShahTomb: 'Sher Shah Suri built the Grand Trunk Road and started the rupee. His red sandstone tomb, from 1545, stands in the middle of a lake at Sasaram.',
+    reiekVillage: 'A model Mizo village on Reiek hill near Aizawl, with traditional bamboo houses of the different Mizo groups.',
+    poloStatue: 'Modern polo grew from Sagol Kangjei, the horse game of Manipur. The statue shows a rider on a Manipuri pony, mallet raised.',
+    phumdi: 'Loktak is the largest freshwater lake in the north-east, famous for its phumdis: round floating islands of grass and soil. Keibul Lamjao, the only floating national park in the world, is on them.',
+    oilRig: 'Oil was struck at Digboi in 1889, and its refinery from 1901 is one of the oldest working refineries in the world.',
+    neermahal: "The summer water palace of Tripura's kings, built in 1930 in the middle of Rudrasagar Lake. You reach it by boat.",
+    maidams: 'The burial mounds of the Ahom kings, who ruled Assam for about 600 years. A UNESCO World Heritage Site since 2024.',
+    kvParadise: "Khonoma was India's first green village: its people stopped hunting and protect the forest round their terraced fields.",
+    kisamaVillage: 'The Hornbill Festival is held here every December, with houses (morungs) of each of the Naga tribes.',
+    jhariaFire: 'Coal seams under Jharia have been burning underground for over a century; smoke rises from cracks in the ground.',
+    caneBridge: 'Built of cane and bamboo without a single nail, the way it has been done in these hills for generations.',
+    ashokaPillar: 'A polished sandstone pillar from about 250 BCE, carrying an edict of Emperor Ashoka. Its lion capital is the national emblem of India.',
+    bambooTower: 'A bamboo tower over the fields, used to watch for elephants and wild boar at harvest time.',
+    dakhilDarwaza: 'The grand gateway of the old capital Gaur, built of small red bricks in 1425.',
+    cemetery: 'The graves of soldiers of the Second World War, kept by the Commonwealth War Graves Commission.' });
+  const ARGFACTS = [[/NALANDA/, 'One of the first great residential universities in the world, from the 5th century, with up to 10,000 students. A UNESCO World Heritage Site.'], [/VIKRAMSHILA/, 'A great centre of learning set up by the Pala king Dharmapala around 800 CE.'],
+    [/RABDENTSE/, 'The ruins of the second capital of the old kingdom of Sikkim, from 1670, on a ridge looking at Kangchenjunga.'], [/PILAK/, 'Terracotta plaques and stone sculptures from the 8th to 12th centuries, found in the fields of south Tripura.'],
+    [/GLASS SKYWALK/, 'A glass-floored bridge high over the valley. Look straight down if you dare.'], [/ROOT BRIDGE/, 'The Khasi people guide the roots of rubber fig trees across the stream; it takes 15 to 30 years, and the bridge grows stronger with age.'],
+    [/BARABAR/, 'The oldest rock-cut caves in India, from the 3rd century BCE, polished smooth as glass inside. They echo for a long time.'], [/MAWSMAI/, 'A limestone cave near Cherrapunji, lit inside, with stalactites and narrow passages.'],
+    [/NOHKALIKAI/, 'The tallest plunge waterfall in India, about 340 m, falling into a green pool near Cherrapunji, one of the wettest places on Earth.'], [/ROHTAS/, 'A huge hill fort on the Kaimur plateau, held by Sher Shah Suri and later by Raja Man Singh.'],
+    [/SELA/, 'The Sela Pass at 4,170 m on the road to Tawang; the new Sela Tunnel keeps the road open all winter.'], [/NATHU LA/, 'A pass on the old Silk Route between Sikkim and Tibet, at 4,310 m.'], [/GURUDONGMAR/, 'One of the highest lakes in the world, at 5,183 m in north Sikkim; part of it stays unfrozen even in winter.'],
+    [/DONG/, 'The village in the far east of Arunachal where India sees the first sunrise of the day.'], [/LAITLUM/, 'The Laitlum canyons drop away steeply into green valleys south of Shillong.'], [/ZULUK/, 'A zig-zag road with about 100 hairpin bends on the old Silk Route.'],
+    [/DZUKOU/, 'A high valley on the Nagaland–Manipur border, famous for its lilies in summer.'], [/JATINGA/, 'A village in the Dima Hasao hills known for the mystery of birds that come down out of the night sky in autumn.'], [/PANGTI/, 'Every October huge flocks of Amur falcons rest here on their way from Siberia to Africa.'],
+    [/NETARHAT/, 'The Queen of Chotanagpur, a plateau town famous for its sunsets.'], [/INA MEMORIAL/, 'At Moirang in 1944 the Indian National Army raised the Indian flag for the first time on Indian soil.'],
+    [/KAZIRANGA/, 'Home of two-thirds of the world\'s one-horned rhinos. A UNESCO World Heritage Site.'], [/MANAS/, 'A UNESCO World Heritage Site on the Bhutan border, home of the golden langur, the pygmy hog and wild buffalo.'], [/SUNDARBANS/, 'The largest mangrove forest in the world and home of the Royal Bengal tiger.'],
+    [/KEIBUL/, 'The only floating national park in the world, on the phumdis of Loktak Lake, home of the sangai, the dancing deer of Manipur.'], [/NAMDAPHA/, 'One of the few places with four big cats: tiger, leopard, clouded leopard and snow leopard.'], [/HOOLLONGAPAR/, 'The home of the hoolock gibbon, the only ape in India.'],
+    [/TIGER RESERVE/, 'A Project Tiger reserve, where the forest is protected so that tigers and the animals they hunt can live safely.'], [/NATIONAL PARK|SANCTUARY/, 'A protected forest where you can see wild animals and birds from the safari jeeps.'], [/FALLS/, 'A waterfall at its best in and just after the monsoon.']];
   const FEE = { statueUnity: 150, ellora: 40, ajanta: 40, hampi: 40, amberFort: 100, mehrangarh: 200, kumbhalgarh: 40, ranthamboreFort: 50, lakePalace: 300, chitradurgaFort: 25, bekalFort: 25, aguadaFort: 25, jatayu: 400, krsDam: 50, adalaj: 0, seCathedral: 0, somnathTemple: 0, trimbak: 0, mangueshi: 0, goldenTemple: 0, sabarimala: 0, ganpatipuleTemple: 0, hajiAli: 0, pushkarGhats: 0, ramkund: 0 };
   const SKIP = new Set(['seaLink', 'casinoBoats', 'houseboats', 'giftCity', 'stadiumOval', 'stadium', 'stadiumMFA', 'fortWalls']);
   const places = W.places || [];
@@ -39,7 +73,7 @@ window.BBFeatures.push(function (bb) {
     x.fillStyle = '#ece7d8'; for (let i = 0; i <= 10; i++) { const px = 8 + i * (w - 16) / 10; x.fillRect(px - 2, 0, 4, h * .36); x.fillRect(px - 2, h * .64, 4, h * .36); } x.fillRect(0, 0, w, 5); x.fillRect(0, h - 5, w, 5); x.fillRect(0, 0, 5, h); x.fillRect(w - 5, 0, 5, h);
     x.fillStyle = 'rgba(236,231,216,.8)'; x.font = '700 30px system-ui,sans-serif'; x.textAlign = 'center'; x.fillText('⟵  ENTRY · EXIT  ⟶', w / 2, h / 2 + 10); });
   const pTex = tex(128, 160, (x, w, h) => { x.fillStyle = '#1d5fbf'; x.fillRect(0, 0, w, h); x.strokeStyle = '#fff'; x.lineWidth = 6; x.strokeRect(6, 6, w - 12, h - 12); x.fillStyle = '#fff'; x.font = '900 92px system-ui,sans-serif'; x.textAlign = 'center'; x.fillText('P', w / 2, 98); x.font = '700 18px system-ui,sans-serif'; x.fillText('VISITORS', w / 2, 138); });
-  const signTex = name => tex(512, 128, (x, w, h) => { x.fillStyle = '#7a2f1d'; x.fillRect(0, 0, w, h); x.strokeStyle = '#f1d9a6'; x.lineWidth = 6; x.strokeRect(8, 8, w - 16, h - 16); x.fillStyle = '#f9ecd0'; x.textAlign = 'center'; let f = 40; x.font = `800 ${f}px system-ui,sans-serif`; while (x.measureText(name).width > w - 40 && f > 18) { f -= 2; x.font = `800 ${f}px system-ui,sans-serif`; } x.fillText(name, w / 2, 62); x.font = '600 22px system-ui,sans-serif'; x.fillText('VISITOR CENTRE · TICKETS · GUIDED TOURS', w / 2, 100); });
+  const signTex = name => tex(512, 128, (x, w, h) => { x.fillStyle = '#7a2f1d'; x.fillRect(0, 0, w, h); x.strokeStyle = '#f1d9a6'; x.lineWidth = 6; x.strokeRect(8, 8, w - 16, h - 16); x.fillStyle = '#f9ecd0'; x.textAlign = 'center'; let f = 40; x.font = `800 ${f}px system-ui,sans-serif`; while (x.measureText(name).width > w - 40 && f > 18) { f -= 2; x.font = `800 ${f}px system-ui,sans-serif`; } x.fillText(name, w / 2, 62, w - 30); x.font = '600 22px system-ui,sans-serif'; x.fillText('VISITOR CENTRE · TICKETS · GUIDED TOURS', w / 2, 100); });
   const L = c => new T.MeshLambertMaterial({ color: c }); const mLot = new T.MeshLambertMaterial({ map: lotTex }), mP = new T.MeshLambertMaterial({ map: pTex }), mPole = L('#3a3a40'), mWall = L('#efe2c6'), mRoof = L('#a8452c'), mGlass = new T.MeshPhongMaterial({ color: '#6f9cbf', shininess: 90 }), mTrim = L('#7a2f1d'), mKerb = L('#b9b2a2'), mBench = L('#6b4a2e'), mBin = L('#2f6b33');
   const put = (g, m, x, y, z, ry, cast) => { if (ry) g.rotateY(ry); g.translate(x, y, z); bb.addStatic(g, m, cast !== false, true); };
   function buildLot(A) { const s = A.lot, ry = Math.atan2(s.ux, s.uz) + Math.PI / 2;
@@ -66,9 +100,9 @@ window.BBFeatures.push(function (bb) {
       A.poi = bb.addPoi({ type: 'visitor', name: `${A.name} visitor centre`, x: A.door.x, z: A.door.z, rot: br + Math.PI / 2, extra: A.id, color: '#f2c14e' }); } }
   /* ---------- the attractions ---------- */
   const ATT = []; let id = 0;
-  for (const l of W.landmarks) { const k = l.kind.split(':')[0]; if (SKIP.has(k)) continue; const nm = placeName(l.x, l.z) || NAMES[k]; if (!nm) continue;
+  for (const l of W.landmarks) { const k = l.kind.split(':')[0]; if (SKIP.has(k)) continue; const arg = l.kind.split(':').slice(1).join(':'); const tc = t => t.split(' · ')[0].toLowerCase().replace(/(^|[\s\-(])([a-z])/g, (m, a, b) => a + b.toUpperCase()); const nm = placeName(l.x, l.z) || (arg ? tc(arg) : NAMES[k]); if (!nm) continue;
     if (ATT.some(a => Math.hypot(a.x - l.x, a.z - l.z) < 150)) continue;
-    const A = { id: 'att' + (id++), kind: k, name: nm, x: l.x, z: l.z, fact: FACTS[k] || '', fee: FEE[k] != null ? FEE[k] : 30 };
+    const A = { id: 'att' + (id++), kind: k, name: nm, x: l.x, z: l.z, fact: (arg && (ARGFACTS.find(f => f[0].test(arg.toUpperCase() + ' ' + nm.toUpperCase())) || [])[1]) || FACTS[k] || '', fee: FEE[k] != null ? FEE[k] : 30 };
     let R = 18; for (const c of (bb.colsAt ? bb.colsAt(l.x, l.z, 30, true) : [])) R = Math.max(R, Math.min(70, Math.hypot(c.x - l.x, c.z - l.z) + Math.max(c.hw, c.hd))); A.R = R;
     A.lot = lotSpot(l); if (A.lot) buildLot(A); ATT.push(A);
     // Beta v1.01.24: two benches facing the sight
@@ -78,7 +112,7 @@ window.BBFeatures.push(function (bb) {
   const P = () => bb.P; const tk = () => (P().extra.attTickets = P().extra.attTickets || {});
   bb.poiHandlers.visitor = poi => { const A = ATT.find(a => a.id === poi.extra); if (!A) return; const has = tk()[A.id] && tk()[A.id] > bb.gameDay - 1;
     const rows = (A.fee > 0 ? bb.rowHtml('ticket', has ? '🎟 Your entry ticket' : '🎟 Entry ticket', has ? 'Valid today · show it at the gate' : 'Valid for today', has ? 'Done' : bb.inr(A.fee), has ? 'ghost' : '') : '') +
-      bb.rowHtml('tour', '🧭 Guided tour', 'A guide shows you round · about a minute', bb.inr(200)) + bb.rowHtml('souv', '🛍 Souvenir', `A keepsake from ${esc(A.name)}`, bb.inr(150), 'ghost') + bb.rowHtml('snack', '🥤 Snack counter', 'Chai, cold drinks and samosa', bb.inr(60), 'ghost') + bb.rowHtml('map', '🗺 Show the way in', 'Directions to the main sight', 'Go', 'ghost');
+      bb.rowHtml('tour', '🧭 Guided tour', 'Walk round with a guide · stories, history and visiting details', bb.inr(200)) + bb.rowHtml('souv', '🛍 Souvenir', `A keepsake from ${esc(A.name)}`, bb.inr(150), 'ghost') + bb.rowHtml('snack', '🥤 Snack counter', 'Chai, cold drinks and samosa', bb.inr(60), 'ghost') + bb.rowHtml('map', '🗺 Show the way in', 'Directions to the main sight', 'Go', 'ghost');
     const got = (P().extra.souvenirs || []).includes(A.name);
     bb.openSheet(`${esc(A.name)}`, 'Visitor centre', `<p class="note" style="color:var(--ink);font-size:14.5px">${esc(A.fact || 'A famous place to visit.')}</p>${A.fee === 0 ? '<p class="note">Entry is free here.</p>' : ''}${rows}${got ? '<p class="note">🛍 You have a souvenir from here.</p>' : ''}`,
       s => s.onclick = e => { const k = e.target.dataset.id; if (!k) return;
@@ -86,11 +120,68 @@ window.BBFeatures.push(function (bb) {
         if (k === 'souv') { if (!bb.spend(150, true)) return; const L2 = P().extra.souvenirs = P().extra.souvenirs || []; if (!L2.includes(A.name)) L2.push(A.name); bb.toast(`🛍 Souvenir from ${esc(A.name)} · ${L2.length} collected`, '#3ddc97'); bb.save(); return bb.poiHandlers.visitor(poi); }
         if (k === 'snack') { if (!bb.spend(60, true)) return; P().hunger = Math.min(100, P().hunger + 25); bb.emit('eat'); bb.toast('🥤 Chai and samosa · hunger +25', '#3ddc97'); return bb.closeSheet(); }
         if (k === 'map') { bb.closeSheet(); return bb.directions ? bb.directions(A.x, A.z, A.name) : null; }
-        if (k === 'tour') { if (!bb.CINE) return; if (!bb.spend(200, true)) return; bb.closeSheet(); tour(A); } }); };
-  function tour(A) { const r = Math.max(45, A.R * 2.2), h = Math.max(18, A.R * .7), lines = [`Welcome to ${A.name}.`, A.fact || 'Take your time and look around.', 'Look up, and do take a photo from the viewpoint.', 'Thank you for visiting. Shubh yatra!'];
-    bb.CINE.play({ kind: 'tour', title: `🧭 ${A.name}`, sub: 'Guided tour', label: 'Guide', lines, dur: 48, cancel: 'End the tour',
-      cam: f => { const a = f * Math.PI * 1.6 + .3, y = h + Math.sin(f * Math.PI) * h * .6; return { x: A.x + Math.cos(a) * r, y, z: A.z + Math.sin(a) * r, lx: A.x, ly: Math.min(25, h * .6), lz: A.z }; },
-      onDone: () => { bb.toast(`🧭 Tour of ${esc(A.name)} done`, '#3ddc97'); bb.emit('tour', A.name); } }); }
+        if (k === 'tour') { if (bb.player.mode === 'drive') return bb.toast('Get out and walk: the tour is on foot', '#ffc93c'); if (TR) return bb.toast('You are already on a tour', '#ffc93c'); if (!bb.spend(200, true)) return; bb.closeSheet(); tour(A); } }); };
+  /* ---------- Beta v2.01.00: the guided walking tour ----------
+     A guide meets you at the visitor centre and walks you round the sight on foot. At each stop the guide waits for
+     you, then tells you about the place on a card: its history, what to look at, and the details (state, entry,
+     timings, best season). Walk after the guide to the next stop. No flying camera. */
+  const CATS = [
+    [/fort|garh|kangla|curzon|dakhil|bhongir|golconda|walls/i, 'fort', ['Look at the thickness of the walls: they were built to stand up to cannon fire.', 'The gates are set at an angle so that an enemy could not charge straight in. Look for the iron spikes on the doors.', 'From the ramparts the guards could watch the roads for miles. Climb up for the same view.']],
+    [/palace|mahal|neermahal|ujjayanta|chowmahalla|coochBehar|hazarduari|lakePalace/i, 'palace', ['This was a royal home: the halls on the ground floor were for the court, the private rooms are above.', 'Look at the details: arches, carved balconies and painted ceilings, made by craftsmen over many years.', 'Parts of the palace are now a museum with old furniture, arms and portraits of the royal family.']],
+    [/tomb|maidam|cemetery|memorial|victoria|jail|shaheed/i, 'memorial', ['Please walk quietly here: this place remembers people of the past.', 'Look at the inscriptions on the stone; they tell the story of who is remembered and when.', 'The gardens around it are kept as they were laid out, with straight paths leading to the centre.']],
+    [/ruin|nalanda|stupa|vikram|rabdentse|pilak|kachari|hampi|kakatiya|monolith/i, 'ruins', ['What you see are the foundations: walls of brick and stone that once stood several storeys high.', 'Archaeologists dug this site out over many years. The small finds — coins, seals and pottery — are kept in the site museum.', 'Walk along the old lanes between the rooms and picture the place full of people.']],
+    [/cave|ellora|ajanta|borra|belum|barabar|mawsmai/i, 'caves', ['Mind your head and your step: the rock is low and the floor can be wet.', 'Look at how the rock was shaped, by water over thousands of years or by hand with simple tools.', 'It stays cool inside even in summer. Listen to the echo when you speak.']],
+    [/falls|dudhsagar|jog|athirappilly/i, 'falls', ['The water is at its fullest in the monsoon, from July to September. In winter it is calmer and clearer.', 'Stay behind the railings: the rocks near the water are slippery.', 'The spray makes rainbows on a sunny morning. This is the best spot for a photo.']],
+    [/beach|lagoon|coast|dhanushkodi|kanyakumari|varkala|omBeach/i, 'beach', ['Swim only between the flags, where the lifeguards can see you.', 'The sunset from here is famous; come back in the evening.', 'Try the local seafood and coconut water at the stalls behind the beach.']],
+    [/lake|phumdi|loktak|laknavaram|tsomgo/i, 'lake', ['The lake is fed by streams from the hills around it, and its level rises in the monsoon.', 'Look for the birds: many come here in winter all the way from Central Asia and Siberia.', 'You can take a boat ride from the jetty.']],
+    [/park|sanctuary|reserve|safari|sundarbans|mangrove|gir/i, 'park', ['Safaris go out early in the morning and late in the afternoon, when the animals are most active.', 'Keep quiet and stay in the vehicle. Never feed the animals.', 'Look out over the grass: the animals of this park are often seen from here.']],
+    [/museum|science|institute|station|writers|building|golghar|secretariat|mantralaya/i, 'building', ['The building itself is part of the story: look at the style of the front and the date over the door.', 'Inside are galleries on history, science and the people of the region.', 'Allow an hour to see the main halls.']],
+    [/bridge|skywalk|tunnel|rig|tower|loop|statue|pillar/i, 'structure', ['This is a great piece of engineering for its time. Look at how it is held up.', 'Engineers check and repair it every year to keep it safe.', 'Stand back here for the best photo of the whole structure.']],
+    [/hill|point|viewpoint|seat|shikhar|pass|kalaDungar|valley|canyon/i, 'view', ['On a clear day you can see for a very long way from here. Mornings are clearest.', 'Bring a jacket: it is cooler and windier up here than in the town below.', 'Sunrise and sunset are the best times to come.']],
+    [/village|kisama|reiek|kvParadise|bamboo|root|cane/i, 'village', ['People here have built with bamboo, wood and stone for generations.', 'Look at the houses: the roofs are steep to throw off the heavy rain.', 'Ask before taking photos of people, and try the local food.']],
+    [/./, 'place', ['Take your time and walk round slowly; there is a lot to see.', 'Look at the details of the place up close.', 'The best photo is from just here.']]];
+  const catOf = A => { for (const [re, c, lines] of CATS) if (re.test(A.kind) || re.test(A.name)) return { c, lines }; return { c: 'place', lines: CATS[CATS.length - 1][2] }; };
+  const SEASON = { fort: 'October to March', palace: 'October to March', memorial: 'all year', ruins: 'October to March', caves: 'all year', falls: 'July to October', beach: 'November to March', lake: 'October to April', park: 'November to April (many parks close in the monsoon)', building: 'all year', structure: 'all year', view: 'October to May', village: 'October to April', place: 'October to March' };
+  const HOURS = { park: '6 am – 5 pm', beach: 'open all day', view: 'sunrise to sunset', village: 'daytime', structure: 'open all day', memorial: '9 am – 5 pm', building: '10 am – 5 pm (closed Mondays)', fort: '9 am – 6 pm', palace: '10 am – 5 pm', ruins: '9 am – 5 pm', caves: '9 am – 5 pm', falls: '8 am – 5 pm', lake: '7 am – 6 pm', place: '9 am – 6 pm' };
+  const card = document.createElement('div'); card.id = 'tourcard'; card.hidden = true;
+  card.style.cssText = 'position:fixed;left:50%;bottom:150px;transform:translateX(-50%);width:min(440px,calc(100vw - 32px));z-index:60;background:rgba(18,22,30,.94);color:#f4f1ea;border:1px solid rgba(242,193,78,.6);border-radius:14px;padding:12px 14px;font:14px/1.45 system-ui,sans-serif;box-shadow:0 8px 30px rgba(0,0,0,.4)';
+  document.body.appendChild(card);
+  let TR = null; const mGuide = L('#f2c14e');
+  function tourStops(A) { const out = [], R = A.R + 9; const d0 = A.door ? Math.atan2(A.door.z - A.z, A.door.x - A.x) : 0;
+    for (let k = 0; k < 8; k++) { const a = d0 + k * Math.PI / 4; let pt = null; for (let r = R; r < R + 30 && !pt; r += 5) { const x = A.x + Math.cos(a) * r, z = A.z + Math.sin(a) * r; if (!blockedAt(x, z) && !bb.roadAt(x, z, 1)) pt = [x, z]; } if (pt) out.push(pt); }
+    if (out.length < 3) out.length = 0; return out; }
+  function tour(A) { if (bb.player.mode === 'drive') { bb.toast('Get out and walk: the tour is on foot', '#ffc93c'); return false; }
+    const ring = tourStops(A); const pp = bb.ppos(); const start = A.door ? [A.door.x, A.door.z] : [pp.x, pp.z];
+    const path = [start].concat(ring.length ? ring : [[A.x + A.R + 10, A.z], [A.x, A.z + A.R + 10], [A.x - A.R - 10, A.z], [A.x, A.z - A.R - 10]]).concat([start]);
+    const { c, lines } = catOf(A); const st = bb.stateAt ? bb.stateAt(A.x, A.z) : ''; const stName = (W.states && W.states[st]) || '';
+    // stops: welcome at the door, three round the sight (spread over the ring), the viewpoint and goodbye at the door
+    const n = path.length - 2, at = i => Math.max(1, Math.min(n, Math.round(i))); const S = [];
+    S.push({ i: 0, title: `Welcome to ${A.name}`, text: (A.fact || 'A famous place to visit.'), facts: [['📍 Where', [placeName(A.x, A.z) !== A.name ? placeName(A.x, A.z) : '', stName].filter(Boolean).join(', ') || 'India'], ['🎟 Entry', A.fee > 0 ? bb.inr(A.fee) + ' per person' : 'Free'], ['🕘 Open', HOURS[c]], ['🌤 Best time', SEASON[c]]] });
+    S.push({ i: at(n * .25), title: 'Stop 1 · Look closer', text: lines[0] }); S.push({ i: at(n * .5), title: 'Stop 2 · The story', text: lines[1] }); S.push({ i: at(n * .75), title: 'Stop 3 · The view', text: lines[2] });
+    S.push({ i: path.length - 1, title: 'Thank you for walking with me', text: `That is the end of the tour of ${A.name}. The souvenir shop and snack counter are in the visitor centre. Shubh yatra!` });
+    const g = bb.buildPerson('#f2c14e', {}); const flag = new T.Mesh(new T.ConeGeometry(.22, .45, 4), mGuide); flag.rotation.x = Math.PI; flag.position.y = 2.45; g.add(flag);
+    g.position.set(start[0], 0, start[1]); bb.scene.add(g);
+    TR = { A, g, flag, path, S, si: 0, seg: 0, x: start[0], z: start[1], phase: 'wait', t: 0 }; showCard(); return true; }
+  function endTour(done) { if (!TR) return; bb.scene.remove(TR.g); card.hidden = true; const A = TR.A; TR = null;
+    if (done) { bb.toast(`🧭 Tour of ${esc(A.name)} done`, '#3ddc97'); bb.emit('tour', A.name); } else bb.toast('🧭 Tour ended', '#ffc93c'); }
+  function showCard() { const s = TR.S[TR.si]; const talk = TR.phase === 'talk';
+    card.innerHTML = `<div style="font-size:12px;opacity:.75">🧭 Guided walk · ${esc(TR.A.name)} · stop ${TR.si + 1} of ${TR.S.length}</div>` +
+      (talk ? `<div style="font-weight:800;font-size:15.5px;margin:4px 0 2px">${esc(s.title)}</div><div>${esc(s.text)}</div>` + (s.facts ? `<div style="display:grid;grid-template-columns:auto 1fr;gap:2px 10px;margin-top:8px;font-size:13px">${s.facts.map(f => `<b>${esc(f[0])}</b><span>${esc(f[1])}</span>`).join('')}</div>` : '')
+        : `<div style="margin:6px 0">${TR.phase === 'walk' ? 'Your guide is walking to the next stop. Follow the yellow flag.' : 'Walk up to your guide (yellow flag) to hear about this stop.'}</div>`) +
+      `<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">${talk ? `<button data-k="next" style="background:#f2c14e;color:#1b1b1f;border:0;border-radius:9px;padding:6px 14px;font-weight:800">${TR.si === TR.S.length - 1 ? 'Finish' : 'Next stop ›'}</button>` : ''}<button data-k="end" style="background:transparent;color:#f4f1ea;border:1px solid rgba(255,255,255,.35);border-radius:9px;padding:6px 12px">End the tour</button></div>`;
+    card.hidden = false; }
+  card.addEventListener('click', e => { const k = e.target.dataset && e.target.dataset.k; if (!k || !TR) return; e.stopPropagation(); if (k === 'end') return endTour(false); if (k === 'next') nextStop(); });
+  function nextStop() { if (TR.si >= TR.S.length - 1) return endTour(true); TR.si++; TR.phase = 'walk'; showCard(); }
+  bb.onUpdate((dt, now) => { if (!TR) return; const pp = bb.ppos(), A = TR.A;
+    if (bb.player.mode === 'drive' || bb.inside || Math.hypot(pp.x - A.x, pp.z - A.z) > A.R + 160) return endTour(false);
+    const target = TR.S[TR.si].i; const U = TR.g.userData; let moving = false;
+    if (TR.phase === 'walk') { // walk along the ring to the stop; wait if you fall behind
+      const gap = Math.hypot(pp.x - TR.x, pp.z - TR.z); if (gap < 22) { const nxt = TR.path[Math.min(TR.seg + 1, TR.path.length - 1)], dx = nxt[0] - TR.x, dz = nxt[1] - TR.z, d = Math.hypot(dx, dz), sp = 2.2 * dt;
+        if (d <= sp) { TR.x = nxt[0]; TR.z = nxt[1]; TR.seg = Math.min(TR.seg + 1, TR.path.length - 1); if (TR.seg >= target) { TR.phase = 'wait'; showCard(); } } else { TR.x += dx / d * sp; TR.z += dz / d * sp; TR.g.rotation.y = Math.atan2(dx, dz); moving = true; } } }
+    else { TR.g.rotation.y = Math.atan2(pp.x - TR.x, pp.z - TR.z); if (TR.phase === 'wait' && Math.hypot(pp.x - TR.x, pp.z - TR.z) < 7) { TR.phase = 'talk'; showCard(); } }
+    TR.g.position.set(TR.x, 0, TR.z); TR.flag.position.y = 2.45 + Math.sin(now * 3) * .12; TR.flag.rotation.y += dt * 2;
+    if (U.legs) { const s = moving ? Math.sin(now * 7) * .45 : 0; U.legs[0].rotation.x = s; U.legs[1].rotation.x = -s; } });
+  bb.TOUR = { start: A => tour(A), end: () => endTour(false), get on() { return TR; }, ATT: () => ATT };
   /* ---------- sightseers and parked visitors ---------- */
   const SHIRTS = ['#e8573e', '#2f7fc1', '#f2c14e', '#3aa66b', '#9b4fb5', '#ff6fa8', '#f4f1ea', '#1f8a8a', '#ff9f1c', '#5c6b8a', '#ffffff', '#d9483b'];
   const camM = L('#1b1b1f'), lensM = L('#4a4a52'), capMs = ['#2d6cdf', '#d9483b', '#f2c14e', '#ffffff', '#1f8a8a'].map(L), packMs = ['#3a2a1c', '#1f3a5f', '#8a2a2a', '#2d3142', '#3aa66b'].map(L);

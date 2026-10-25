@@ -91,6 +91,11 @@ window.BBFeatures.push(function (bb) {
     if (st === 'UK' || st === 'UP') return [['elephant', 3], ['tiger', 2], ['deer', 7], ['monkey', 4], ['peacock', 3], ['leopard', 1]];
     if (st === 'MP') return [['tiger', 3], ['deer', 8], ['peacock', 4], ['monkey', 4], ['bear', 2], ['leopard', 2], ['buffalo', 2]];
     if (st === 'CG') return [['tiger', 1], ['buffalo', 3], ['deer', 6], ['bear', 3], ['elephant', 2], ['monkey', 3], ['peacock', 2]];
+    // Beta v2.01.00: rhinos and elephants in the Assam and Bengal Duars, a tiger in the Sundarbans, monkeys and bears in the hills
+    if (st === 'AS' || st === 'WB') return [['rhino', 2], ['elephant', 4], ['buffalo', 3], ['deer', 6], ['monkey', 4], ['peacock', 2], ['tiger', 1]];
+    if (st === 'SK') return [['deer', 4], ['goat', 4], ['bear', 2], ['monkey', 3], ['leopard', 1]];
+    if (st === 'AR' || st === 'NL' || st === 'MN' || st === 'MZ' || st === 'ML' || st === 'TR') return [['monkey', 7], ['deer', 6], ['elephant', 2], ['bear', 2], ['buffalo', 2], ['leopard', 1]];
+    if (st === 'BR') return [['deer', 6], ['buffalo', 3], ['peacock', 4], ['monkey', 3], ['tiger', 1]]; if (st === 'AN') return [['deer', 6], ['monkey', 2], ['crocodile', 1]];
     if (st === 'OD' || st === 'JH') return [['elephant', 4], ['tiger', 1], ['deer', 6], ['monkey', 4], ['peacock', 3], ['bear', 2]]; if (st === 'GJ') return [['lion', 3], ['lioness', 3], ['deer', 6], ['peacock', 4], ['monkey', 2]]; if (st === 'RJ' || st === 'MH' || st === 'TG') return [['tiger', 1], ['deer', 7], ['peacock', 4], ['monkey', 3], ['bear', 1], ['leopard', 1]];
     return [['elephant', 4], ['buffalo', 3], ['deer', 6], ['monkey', 4], ['peacock', 3], ['bear', 1], ['tiger', 1], ['leopard', 1]]; }
   const SPEED = { elephant: .9, buffalo: .8, deer: 1.3, monkey: 1.2, peacock: .7, bear: .8, tiger: 1.4, lion: 1.1, lioness: 1.2, leopard: 1.4 };
@@ -109,7 +114,7 @@ window.BBFeatures.push(function (bb) {
       a.g.position.set(a.x, 0, a.z); a.g.rotation.y = a.h; if (bb.animGait) bb.animGait({ g: a.g }, now, a.sp); } });
 
   /* ---------- dolphins off the coast ---------- */
-  const SPOTS = ['Palolem Beach', 'Fort Aguada', 'Tarkarli Beach', 'Kovalam Beach', 'Kavaratti Lagoon', 'Bangaram Island', 'Arambol Beach', 'Colva Beach', 'Dumas Beach', 'Mandvi Beach and dhow yard', 'Marina Beach', 'RK Beach', 'Gulf of Mannar Marine Park', 'Promenade Beach', 'Chilika Lake (Irrawaddy dolphins)', 'Puri beach and sand art', 'Chandipur low-tide beach'].map(n => (W.places || []).find(p => p[0] === n)).filter(Boolean);
+  const SPOTS = ['Palolem Beach', 'Fort Aguada', 'Tarkarli Beach', 'Kovalam Beach', 'Kavaratti Lagoon', 'Bangaram Island', 'Arambol Beach', 'Colva Beach', 'Dumas Beach', 'Mandvi Beach and dhow yard', 'Marina Beach', 'RK Beach', 'Gulf of Mannar Marine Park', 'Promenade Beach', 'Chilika Lake (Irrawaddy dolphins)', 'Puri beach and sand art', 'Chandipur low-tide beach', 'Radhanagar Beach', 'Digha beach', 'Vikramshila Gangetic Dolphin Sanctuary', 'Sundarbans tiger reserve'].map(n => (W.places || []).find(p => p[0] === n)).filter(Boolean);
   function offshore(x, z) { for (const r of [70, 110, 160, 220]) for (let k = 0; k < 16; k++) { const a = k / 16 * 6.283; const px = x + Math.cos(a) * r, pz = z + Math.sin(a) * r; if (bb.isWater(px, pz) && bb.isWater(px + 25, pz) && bb.isWater(px - 25, pz) && bb.isWater(px, pz + 25) && bb.isWater(px, pz - 25)) return [px, pz]; } return null; }
   const dmat = new T.MeshLambertMaterial({ color: '#6f8796' }), dbelly = new T.MeshLambertMaterial({ color: '#c9d3d8' });
   function dolphin() { const d = new T.Group(); const b = new T.Mesh(new T.SphereGeometry(.5, 12, 8), dmat); b.scale.set(.62, .55, 2.4); d.add(b); const be = new T.Mesh(new T.SphereGeometry(.45, 10, 6), dbelly); be.scale.set(.5, .35, 2); be.position.y = -.12; d.add(be);

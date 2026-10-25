@@ -1,7 +1,7 @@
 // Online play: Supabase sign-in (Google or guest), unique usernames, cloud saves, shared admin settings,
 // and the live West region on the Cloudflare server (other players, proximity chat, mute and report).
 // Does nothing until js/online-config.js is filled in.
-window.__ibOnlineV = '2.00.00';
+window.__ibOnlineV = '2.01.00';
 window.BBFeatures.push(function (bb) {
   window.__ibOnlineStage = 'started';
   const C = window.ONLINE || {};
