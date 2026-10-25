@@ -1,7 +1,7 @@
 // Online play: Supabase sign-in (Google or guest), unique usernames, cloud saves, shared admin settings,
 // and the live West region on the Cloudflare server (other players, proximity chat, mute and report).
 // Does nothing until js/online-config.js is filled in.
-window.__ibOnlineV = '2.01.00';
+window.__ibOnlineV = '2.02.00';
 window.BBFeatures.push(function (bb) {
   window.__ibOnlineStage = 'started';
   const C = window.ONLINE || {};
@@ -272,6 +272,7 @@ window.BBFeatures.push(function (bb) {
     else if (d.t === 'vs') { U.add('voice_in'); bb.emit('voicestream', d); }
     else if (d.t === 'gc') bb.emit('gc', d);
     else if (d.t === 'ev') bb.emit('ev', d);
+    else if (d.t === 'loot') bb.emit('loot', d);
     else if (d.t === 'silenced') { silencedUntil = d.until || silencedUntil; if (Date.now() - (handle._sil || 0) > 8000) { handle._sil = Date.now(); bb.toast(silenceNote(silencedUntil), '#ff8b8b'); } bb.emit('silenced', silencedUntil); }
     else if (d.t === 'kick') { noteErr(d.msg); if (/somewhere else/i.test(d.msg)) d.msg = 'This account is playing in another window or device, so this one went offline. Each player needs their own account (another Google account, or a guest)'; kicked = true; if (/idle/i.test(d.msg)) idleOff = true; bb.toast(d.msg + (idleOff ? ' · press any key to rejoin' : ''), '#ffc93c'); }
     else if (d.t === 'err' && d.code === 'banned') { banned = true; kicked = true; bannedSheet(); }

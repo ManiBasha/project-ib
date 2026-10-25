@@ -6,7 +6,7 @@ const W=window.WORLD,LM=window.LANDMARKS;
 // Beta v2.00.00: the map reaches north of the old top edge (Delhi, Punjab, the Himalaya), so z can be negative down to W.Z0
 const Z0=W.Z0||0;
 try{await Promise.race([document.fonts.load('800 48px "Baloo 2"'),new Promise(r=>setTimeout(r,1500))]);}catch(e){}
-const VERSION='Beta v2.01.00';
+const VERSION='Beta v2.02.00';
 
 /* ================= storage + config ================= */
 const store={get(k){try{return JSON.parse(localStorage.getItem(k));}catch(e){return null;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}};
@@ -415,7 +415,7 @@ function nearHighway(x,z,r){for(const id of edgesNear(x,z)){const e=EDGES[id];if
 /* services are planned before buildings so lots can be reserved */
 const pois=[];const blocks=[];const zoneData=new Map();
 const SVC_LOT=new Set(['pump','cng','station','bus']);
-const GUN_ZONE=new Set();{const by={};for(const z of W.zones){const sc={big:3,mid:2,small:1}[z.size]*1000+z.nx*z.nz+(W.startZones&&W.startZones[z.st]===z.id?500:0);if(!by[z.st]||sc>by[z.st][0])by[z.st]=[sc,z.id];}for(const k in by)GUN_ZONE.add(by[k][1]);}
+const GUN_ZONE=new Set();{const by={};for(const z of W.zones){const sc={big:3,mid:2,small:1}[z.size]*1000+z.nx*z.nz+(W.startZones&&W.startZones[z.st]===z.id?500:0);if(!by[z.st]||sc>by[z.st][0])by[z.st]=[sc,z.id];}for(const k in by)GUN_ZONE.add(by[k][1]);for(const z of W.zones)if(z.size==='big'&&!z.island)GUN_ZONE.add(z.id);} // Beta v2.02.00: and one in every big city
 for(const z of W.zones){const zd={z,blocks:[],tallRoofs:[],slots:[]};zoneData.set(z.id,zd);
   for(let i=0;i<z.nx;i++)for(let j=0;j<z.nz;j++){const bx=z.x0+i*80+40,bz=z.z0+j*80+40;const sp=z.specials[i+','+j];const land=!isWater(bx,bz)&&!isWater(bx-28,bz-28)&&!isWater(bx+28,bz+28)&&!isWater(bx-28,bz+28)&&!isWater(bx+28,bz-28);
     const b={zone:z,i,j,x:bx,z:bz,sp,land,reserved:new Set(),open:false,hasBld:false};zd.blocks.push(b);blocks.push(b);}

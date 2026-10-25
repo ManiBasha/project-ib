@@ -1,10 +1,10 @@
 
 /* ================= places you can use ================= */
 const PCOL={stadium:'#3ddc97',bank:'#3ddc97',food:'#ff9f1c',toilet:'#5fb4ff',pump:'#2fc4b2',cng:'#7fd858',hospital:'#ff6b6b',police:'#5f8bff',rto:'#c9a227',jobs:'#ffb347',cars:'#c38bff',bikes:'#ff8fd0',clothes:'#ff6fa8',furniture:'#d8a46a',mobile:'#6fc3ff',guns:'#ff5d73',realty:'#ffc93c',mechanic:'#9aa5b1',station:'#e07b39',bus:'#e85d5d',lodge:'#b38bff',home:'#ffe08a',airport:'#7ad0ff',local:'#ff9a3c',ferry:'#4fb3ff',safari:'#9bd36a',camel:'#e3b26a',cricket:'#3ddc97',mall:'#ff6fa8',metro:'#c38bff',bullet:'#1b4f9c',gig:'#e0a030',helipad:'#ffd36a',activity:'#3fd0c9',zoo:'#7cc96a'};
-const PICON={heritage:'📜',stadium:'⚽',bank:'🏦',food:'🍛',toilet:'🚻',pump:'⛽',cng:'🟢',hospital:'🏥',police:'🚓',rto:'🪪',jobs:'💼',cars:'🚗',bikes:'🏍',clothes:'👕',furniture:'🛋',mobile:'📱',guns:'🎯',realty:'🏘',mechanic:'🔧',station:'🚆',bus:'🚌',lodge:'🛏',home:'🏡',airport:'✈',local:'🚉',ferry:'⛴',safari:'🦁',camel:'🐪',cricket:'🏏',mall:'🛍',metro:'Ⓜ',bullet:'🚄',gig:'🛠',helipad:'🚁',activity:'🪂',zoo:'🦒'};
+const PICON={heritage:'📜',stadium:'⚽',bank:'🏦',food:'🍛',toilet:'🚻',pump:'⛽',cng:'🟢',hospital:'🏥',police:'🚓',rto:'🪪',jobs:'💼',cars:'🚗',bikes:'🏍',clothes:'👕',furniture:'🛋',mobile:'📱',guns:'🔫',realty:'🏘',mechanic:'🔧',station:'🚆',bus:'🚌',lodge:'🛏',home:'🏡',airport:'✈',local:'🚉',ferry:'⛴',safari:'🦁',camel:'🐪',cricket:'🏏',mall:'🛍',metro:'Ⓜ',bullet:'🚄',gig:'🛠',helipad:'🚁',activity:'🪂',zoo:'🦒'};
 const PLABEL={stadium:'Football stadium',bank:'Bank and ATM',food:'Food and chai',toilet:'Public toilet',pump:'Petrol and diesel',cng:'CNG pump',hospital:'Hospital',police:'Police station',rto:'RTO (licences)',jobs:'Job agent',cars:'Car showroom',bikes:'Two-wheeler dealer',clothes:'Clothes shop',furniture:'Furniture',mobile:'Mobile shop',guns:'Gun shop',realty:'Homes for sale',mechanic:'Mechanic',station:'Railway station',bus:'Bus stand',lodge:'Lodge to sleep',home:'Home',airport:'Airport',local:'Mumbai local',ferry:'Ferry',safari:'Lion safari',camel:'Camel ride',cricket:'Cricket stadium',mall:'Shopping mall',metro:'Metro station',bullet:'Bullet train station',gig:'Local work',helipad:'Helipad',activity:'Adventure activity',zoo:'Zoo'};
 const VALUE={cycle:4000,rickshaw:15000,bike:65000,sportsbike:180000,auto:12000,car:45000,sedan:85000,suv:120000,sports:250000,taxi:40000};
-const PNAME={bank:'Bharat Bay Bank',toilet:'Public toilet',pump:'Petrol pump',cng:'CNG pump',hospital:'Hospital',police:'Police station',rto:'RTO office',jobs:'Rozgar job agent',cars:'Bay Motors',bikes:'Do-Pahiya two-wheelers',clothes:'Kapda Bazaar',furniture:'Ghar Sajao furniture',mobile:'Mobile Point',guns:'Hathiyar Ghar',realty:'Sapna Homes',mechanic:'Mechanic garage',station:'Railway station',bus:'ST bus stand',lodge:'Lodge'};
+const PNAME={bank:'Bharat Bay Bank',toilet:'Public toilet',pump:'Petrol pump',cng:'CNG pump',hospital:'Hospital',police:'Police station',rto:'RTO office',jobs:'Rozgar job agent',cars:'Bay Motors',bikes:'Do-Pahiya two-wheelers',clothes:'Kapda Bazaar',furniture:'Ghar Sajao furniture',mobile:'Mobile Point',guns:'Hathiyar Ghar · Weapons',realty:'Sapna Homes',mechanic:'Mechanic garage',station:'Railway station',bus:'ST bus stand',lodge:'Lodge'};
 const FOODNAME={MH:['Chai tapri','Vada pav stall','Udupi canteen'],GJ:['Chai tapri','Farsan house','Gujarati thali house'],RJ:['Chai tapri','Kachori corner','Rajasthani bhojanalaya'],DD:['Coconut stall','Seafood shack','Beach cafe']};
 // Beta v2.01.00: the name tag over a shop or place is as wide as its name (it used to be cut off after about 15 letters)
 const _lblCtx=document.createElement('canvas').getContext('2d');
@@ -592,7 +592,7 @@ function buildPerson(shirt,opts={}){const g=new THREE.Group();const shirtC=typeo
   g.userData={legs,arms,knees,fores,body,head:body,hair:{visible:true},legM:pm(legC),female};return g;}
 const avatar=buildPerson(LMat('#e8573e'),{mats:true,female:false,skin:'#a0673f'});scene.add(avatar);avatar.visible=false;
 const AU=avatar.userData;
-const gunMeshes={bat:part(G.box,LMat('#c99a5b'),.09,.09,1.1,0,-.3,.45,AU.fores[1]),pistol:part(G.box,VM.black,.1,.16,.4,0,-.32,.18,AU.fores[1]),shotgun:part(G.box,VM.black,.1,.12,1.1,0,-.3,.5,AU.fores[1])};
+const gunMeshes={bat:part(G.box,LMat('#c99a5b'),.09,.09,1.1,0,-.3,.45,AU.fores[1]),lathi:part(G.box,LMat('#7a5232'),.05,.05,1.6,0,-.3,.5,AU.fores[1]),knife:part(G.box,LMat('#c9ced6'),.03,.05,.32,0,-.32,.2,AU.fores[1]),pistol:part(G.box,VM.black,.1,.16,.4,0,-.32,.18,AU.fores[1]),shotgun:part(G.box,VM.black,.1,.12,1.1,0,-.3,.5,AU.fores[1]),smg:part(G.box,LMat('#2b2d33'),.1,.2,.62,0,-.32,.3,AU.fores[1]),rifle:part(G.box,LMat('#5a3b22'),.08,.12,1.35,0,-.3,.6,AU.fores[1])};
 const grp=(parent,list)=>{const g=new THREE.Group();for(const [geo,m,sx,sy,sz,x,y,z,rz] of list){const q=part(geo,m,sx,sy,sz,x,y,z,g);if(rz)q.rotation.z=rz;}parent.add(g);return g;};
 const outfitParts={kurta:(()=>{const m=new THREE.Mesh(PG.kurta,LMat('#ffffff'));m.scale.set(1.05,1,.7);avatar.add(m);return m;})(),saree:(()=>{const m=new THREE.Mesh(PG.saree,LMat('#ffffff'));m.scale.set(1.04,1,.74);avatar.add(m);return m;})(),
   pallu:(()=>{const m=part(G.box,LMat('#ffffff'),.2,.68,.022,.03,1.18,.142,avatar);m.rotation.z=-.55;return m;})(),
@@ -601,10 +601,11 @@ const outfitParts={kurta:(()=>{const m=new THREE.Mesh(PG.kurta,LMat('#ffffff'));
   helmet:part(G.sph,VM.black,.155,.155,.165,0,1.745,0,avatar),sneakers:[part(G.box,LMat('#ffffff'),.13,.075,.27,0,-.4,.045,AU.knees[0]),part(G.box,LMat('#ffffff'),.13,.075,.27,0,-.4,.045,AU.knees[1])]};
 const player={mode:'drive',veh:null,pos:new THREE.Vector3(2940,0,8736),h:Math.PI/2,v:0,shake:0,anim:0,fireCd:0,arrestT:0,coolT:0,stars:0,hitCd:0,run:false,knock:0};
 const ppos=()=>player.mode==='drive'&&player.veh?player.veh.pos:player.pos;
-const WEAP={fist:{name:'Fists',range:1.9,rate:.45,melee:true},bat:{name:'Cricket bat',range:2.6,rate:.55,melee:true},pistol:{name:'Pistol',range:60,rate:.32,ammo:'pistol'},shotgun:{name:'Shotgun',range:28,rate:.95,ammo:'shotgun'}};
+// Beta v2.02.00: more weapons (lathi, knife, SMG, rifle); dmg = damage to a police jeep (it has 100), hit = blows to knock a person down
+const WEAP={fist:{name:'Fists',range:1.9,rate:.45,melee:true,hit:1},bat:{name:'Cricket bat',range:2.6,rate:.55,melee:true,hit:2},lathi:{name:'Lathi',range:2.8,rate:.5,melee:true,hit:2},knife:{name:'Knife',range:1.8,rate:.33,melee:true,hit:3},pistol:{name:'Pistol',range:60,rate:.32,ammo:'pistol',dmg:25},shotgun:{name:'Shotgun',range:28,rate:.95,ammo:'shotgun',dmg:25,two:true},smg:{name:'SMG',range:42,rate:.11,ammo:'smg',dmg:12,two:true},rifle:{name:'Rifle',range:130,rate:1.1,ammo:'rifle',dmg:60,two:true}};
 
 /* save */
-function newSave(){return{v:3,name:'',age18:false,cash:CFG.startCash,bank:0,health:100,hunger:80,bladder:80,energy:85,weapons:['fist'],ammo:{pistol:0,shotgun:0},weapon:'fist',
+function newSave(){return{v:3,name:'',age18:false,cash:CFG.startCash,bank:0,health:100,hunger:80,bladder:80,energy:85,weapons:['fist'],ammo:{pistol:0,shotgun:0,smg:0,rifle:0},armour:0,weapon:'fist',
   cars:[{type:'auto',fuel:80,hp:100,puc:0,ins:0}],homes:[],pos:null,inCar:0,trips:0,lic:{two:false,lmv:false,heavy:false},helmet:false,
   outfit:{top:'shirt',topCol:'#e8573e',botCol:'#2d3142',shoes:'chappal',glasses:false,cap:false},look:null,wardrobe:['shirt'],furniture:{},phone:'smart',challans:[],
   ratings:{},jobs:{},discovered:{},ach:{},daily:{last:'',streak:0},story:{step:0,done:false},biz:[],rent:{},seenVersion:'',robbedAt:-99,stats:{km:0,lions:0,trips:0,earned:0,fines:0},extra:{}};}
@@ -817,21 +818,25 @@ function addWanted(n,why){if(CFG.police==='off'||inside)return;const before=play
 function renderStars(){const el=$('#stars');let h='';for(let i=0;i<5;i++){const on=i<player.stars;h+=`<svg viewBox="0 0 24 24" class="${on?'on':''}"><path d="M12 2.5l2.8 6 6.5.7-4.9 4.4 1.4 6.4L12 16.7 6.2 20l1.4-6.4L2.7 9.2l6.5-.7z" fill="${on?'#ffc93c':'rgba(255,255,255,.18)'}" stroke="${on?'#7a4a00':'none'}" stroke-width="1"/></svg>`;}el.innerHTML=player.stars?h:'';}
 let policeSpawnT=0;
 function spawnPolice(){const pp=ppos();const l=randomLaneNear(pp.x,pp.z,110,170);if(!l)return;lanePos(l,_lp);const v=makeVeh('police',_lp.x,_lp.z,Math.atan2(pp.x-_lp.x,pp.z-_lp.z),'police');v.ai={stuck:0,shootT:2};v.hp=100;}
-function updPolice(dt,now){const pp=ppos();const cops=vehicles.filter(v=>v.state==='police');const aggr=AGGR[CFG.police]||0;
+// Beta v2.02.00: hiding (features/hideout.js sets player.hidden = {x,z,safe}). While you hide the police search the area
+// instead of driving at you, cannot shoot or arrest you, and the stars cool down faster. A jeep that passes very close may find you.
+function updPolice(dt,now){const pp=ppos();const cops=vehicles.filter(v=>v.state==='police');const aggr=AGGR[CFG.police]||0;const hid=player.hidden;
   if(player.stars>0&&!inside){const want=Math.round(Math.min(8,player.stars*(player.stars>=3?2:1.4))*aggr);policeSpawnT-=dt;if(cops.filter(c=>!c.dead).length<want&&policeSpawnT<=0){spawnPolice();policeSpawnT=2.5;}}
   let near=false;
-  for(const c of cops){const dx=pp.x-c.pos.x,dz=pp.z-c.pos.z,d=Math.hypot(dx,dz);
+  for(const c of cops){let dx=pp.x-c.pos.x,dz=pp.z-c.pos.z,d=Math.hypot(dx,dz);const realD=d;
+    if(hid){if(!c.ai.sx||now>(c.ai.st||0)){const a=Math.random()*6.28,r=hid.safe?MR(60,140):MR(15,70);c.ai.sx=hid.x+Math.cos(a)*r;c.ai.sz=hid.z+Math.sin(a)*r;c.ai.st=now+MR(4,8);}dx=c.ai.sx-c.pos.x;dz=c.ai.sz-c.pos.z;d=Math.hypot(dx,dz)+15;
+      if(!hid.safe&&realD<9&&Math.random()<dt*.35&&!c.dead){emit('hideFound',c);}}
     if(player.stars===0||inside){if(d>40||inside){removeVeh(c);continue;}c.v*=.95;}
     if(c.m.userData.lights){const f=Math.floor(now*6)%2;c.m.userData.lights[0].material=f?VM.sirR:VM.dark;c.m.userData.lights[1].material=f?VM.dark:VM.sirB;}
-    if(c.dead||player.stars===0)continue;if(d<70)near=true;
+    if(c.dead||player.stars===0)continue;if(hid?realD<10:d<70)near=true;
     const want=Math.atan2(dx,dz),diff=wrapA(want-c.h);c.steer=clamp(diff*2,-1,1);const tv=d>14?c.spec.max*(.75+.25*aggr):d>7?7:0;c.v+=clamp(tv-c.v,-25*dt,c.spec.acc*dt);
     c.h+=c.steer*c.spec.turn*clamp(Math.abs(c.v)/7,0,1)*dt;const nx=c.pos.x+Math.sin(c.h)*c.v*dt,nz=c.pos.z+Math.cos(c.h)*c.v*dt;if(drivable(nx,nz)){c.pos.x=nx;c.pos.z=nz;}else c.v*=.3;
-    if(collide(c.pos,1.2,false)&&c.v>6)c.v*=.6;if(c.v<2&&d>20)c.ai.stuck+=dt;else c.ai.stuck=Math.max(0,c.ai.stuck-dt);if(c.ai.stuck>3||d>260){removeVeh(c);continue;}
+    if(collide(c.pos,1.2,false)&&c.v>6)c.v*=.6;if(c.v<2&&d>20)c.ai.stuck+=dt;else c.ai.stuck=Math.max(0,c.ai.stuck-dt);if(c.ai.stuck>3||(!hid&&d>260)||realD>400){removeVeh(c);continue;}
     c.m.rotation.y=c.h;for(const w of c.m.userData.wheels)w.rotation.x+=c.v*dt/.4;
     if(player.mode==='foot'){const s=segDist(pp.x,pp.z,c);if(s.d<c.spec.wid/2+.6&&c.v>5&&player.hitCd<=0){damage(12,'Hit by a police jeep');player.hitCd=1;player.pos.x+=s.dx/(s.d||1)*2;player.pos.z+=s.dz/(s.d||1)*2;}}
-    if(player.stars>=3&&d<34){c.ai.shootT-=dt*aggr;if(c.ai.shootT<=0){c.ai.shootT=MR(1.1,1.8);tracer(c.pos.x,1.6,c.pos.z,pp.x+MR(-.5,.5),1.2,pp.z+MR(-.5,.5),0x9fd0ff);sfxShot(.5);damage(player.mode==='drive'?2:5,'Police fire');}}}
-  if(player.stars>0){const close=cops.some(c=>!c.dead&&c.pos.distanceTo(pp)<7.5);const spd=player.mode==='drive'?Math.abs(player.veh.v):player.v;if(close&&spd<3.5)player.arrestT+=dt;else player.arrestT=Math.max(0,player.arrestT-dt*1.5);if(player.arrestT>2.6)busted();
-    if(near)player.coolT=0;else{player.coolT+=dt;if(player.coolT>10+player.stars*3){player.stars--;player.coolT=0;renderStars();toast(player.stars?'Lost a star':'You lost the police','#3ddc97');emit('stars',player.stars);}}}
+    if(!hid&&player.stars>=3&&d<34){c.ai.shootT-=dt*aggr;if(c.ai.shootT<=0){c.ai.shootT=MR(1.1,1.8);tracer(c.pos.x,1.6,c.pos.z,pp.x+MR(-.5,.5),1.2,pp.z+MR(-.5,.5),0x9fd0ff);sfxShot(.5);damage(player.mode==='drive'?2:5,'Police fire');}}}
+  if(player.stars>0){const close=!hid&&cops.some(c=>!c.dead&&c.pos.distanceTo(pp)<7.5);const spd=player.mode==='drive'?Math.abs(player.veh.v):player.v;if(close&&spd<3.5)player.arrestT+=dt;else player.arrestT=Math.max(0,player.arrestT-dt*1.5);if(player.arrestT>2.6)busted();
+    if(near)player.coolT=0;else{player.coolT+=dt*(hid?(hid.safe?4:2.5):1);if(player.coolT>10+player.stars*3){player.stars--;player.coolT=0;renderStars();toast(player.stars?'Lost a star':'You lost the police','#3ddc97');emit('stars',player.stars);}}}
   $('#stars').classList.toggle('hot',near);}
 
 /* ================= weapons ================= */
@@ -839,15 +844,15 @@ const tracers=[];
 function tracer(x1,y1,z1,x2,y2,z2,col=0xfff1a0){const g=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(x1,y1,z1),new THREE.Vector3(x2,y2,z2)]);const l=new THREE.Line(g,new THREE.LineBasicMaterial({color:col,transparent:true,opacity:.9}));scene.add(l);tracers.push({l,t:.09});}
 const flash=new THREE.PointLight(0xffd27a,0,10);scene.add(flash);
 const fireHooks=[];function fire(){for(const f of fireHooks){try{if(f())return;}catch(e){}}if(player.mode!=='foot'||inside||player.fireCd>0||uiLock()||player.knock>0)return;const Wp=WEAP[P.weapon];
-  if(!Wp.melee&&!CFG.weapons){P.weapon='fist';updWeap();return;}if(Wp.ammo&&P.ammo[Wp.ammo]<=0){toast('Out of ammo · buy more at Hathiyar Ghar','#ff9f1c');P.weapon='fist';updWeap();return;}
+  if(!Wp.melee&&!CFG.weapons){P.weapon='fist';updWeap();return;}if(Wp.ammo&&!(P.ammo[Wp.ammo]>0)){toast('Out of ammo · buy more at Hathiyar Ghar','#ff9f1c');P.weapon='fist';updWeap();return;}
   player.fireCd=Wp.rate;player.anim=.25;const ox=player.pos.x,oz=player.pos.z;const cone=Wp.melee?1.1:.32;let best=null,bd=1e9;const cand=[];
   for(const p of peds)if(p.state!=='down'&&p.g.visible)cand.push({k:'ped',o:p,x:p.x,z:p.z});for(const v of vehicles)if(v.state==='traffic'||v.state==='police')cand.push({k:'veh',o:v,x:v.pos.x,z:v.pos.z});
   for(const c of cand){const dx=c.x-ox,dz=c.z-oz,d=Math.hypot(dx,dz);const lim=Wp.range+(c.k==='veh'?c.o.spec.len/2:0);if(d>lim||d<.01)continue;const da=Math.abs(wrapA(Math.atan2(dx,dz)-player.h));if(da<cone&&d<bd){bd=d;best=c;}}
-  if(Wp.melee){sfxPunch();player.lastPunch=performance.now();player.punchSide=1-(player.punchSide|0);if(best&&best.k==='ped'&&bd<Wp.range+.4){player.h=Math.atan2(best.x-ox,best.z-oz);hitPed(best.o,P.weapon==='bat'?2:1,ox,oz);fleeFrom(ox,oz,25);}return;}
+  if(Wp.melee){sfxPunch();player.lastPunch=performance.now();player.punchSide=1-(player.punchSide|0);if(best&&best.k==='ped'&&bd<Wp.range+.4){player.h=Math.atan2(best.x-ox,best.z-oz);hitPed(best.o,Wp.hit||1,ox,oz);fleeFrom(ox,oz,25);}return;}
   P.ammo[Wp.ammo]--;dirty=true;updWeap();sfxShot(1);flash.position.set(ox+Math.sin(player.h),1.4,oz+Math.cos(player.h));flash.intensity=3;let tx=ox+Math.sin(player.h)*Wp.range,tz=oz+Math.cos(player.h)*Wp.range;
-  const hitOne=c=>{if(c.k==='ped')knockPed(c.o,null);else{const v=c.o;if(v.state==='police'){v.hp-=25;addWanted(1,'Shot at police');if(v.hp<=0){v.dead=true;v.v=0;}}else{v.stopT=8;}}};
+  const hitOne=c=>{if(c.k==='ped')knockPed(c.o,null);else{const v=c.o;if(v.state==='police'){v.hp-=Wp.dmg||25;addWanted(1,'Shot at police');if(v.hp<=0){v.dead=true;v.v=0;}}else{v.stopT=8;}}};
   if(best){player.h=Math.atan2(best.x-ox,best.z-oz);tx=best.x;tz=best.z;hitOne(best);if(best.k==='ped')addWanted(1,'Attack');}
   if(P.weapon==='shotgun'){let n=0;for(const c of cand){if(c===best||n>=2)continue;const dx=c.x-ox,dz=c.z-oz,d=Math.hypot(dx,dz);if(d<16&&Math.abs(wrapA(Math.atan2(dx,dz)-player.h))<.25){hitOne(c);n++;}}}
   tracer(ox+Math.sin(player.h)*.6,1.35,oz+Math.cos(player.h)*.6,tx,1.1,tz);if(player.stars===0)addWanted(1,'Shots fired');fleeFrom(ox,oz,45);}
 function cycleWeapon(){const list=P.weapons.filter(w=>CFG.weapons||WEAP[w].melee);const i=list.indexOf(P.weapon);P.weapon=list[(i+1)%list.length]||'fist';updWeap();}
-function updWeap(){const Wp=WEAP[P.weapon]||WEAP.fist;const el=$('#weap');el.hidden=P.weapon==='fist'||!P.weapon;el.textContent=Wp.ammo?`${Wp.name} · ${P.ammo[Wp.ammo]}`:Wp.name;el.title='Weapon in hand · Q switches';for(const k in gunMeshes)gunMeshes[k].visible=k===P.weapon;}
+function updWeap(){const Wp=WEAP[P.weapon]||WEAP.fist;const el=$('#weap');el.hidden=P.weapon==='fist'||!P.weapon;el.textContent=(Wp.ammo?`${Wp.name} · ${P.ammo[Wp.ammo]||0}`:Wp.name)+(P.armour>0?` · 🦺 ${Math.round(P.armour)}`:'');el.title='Weapon in hand · Q switches';for(const k in gunMeshes)gunMeshes[k].visible=k===P.weapon;}

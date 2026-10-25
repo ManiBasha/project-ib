@@ -12,6 +12,9 @@ const VOICE_MAX = 46000;           // characters of base64 audio in one voice me
 const VOICE_MIME = new Set(['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/mp4', 'audio/aac']);
 const IDLE_MS = 60_000;            // drop sockets silent for a minute
 const VEH = new Set(['cycle', 'rickshaw', 'bike', 'sportsbike', 'auto', 'taxi', 'car', 'sedan', 'suv', 'sports', 'police', 'bus', 'truck', 'camel', 'horse', 'elephant', 'mpv', 'van', 'coupe', 'convertible', 'limo', 'ambulance', 'camper', 'pickup', 'lorry', 'tanker', 'towtruck', 'firetruck', 'tractor', 'scooter', 'atv', 'golfcart', 'erickshaw']);
+const LOOT_MS = 10 * 60_000;      // dropped money and weapons stay on the ground this long (Beta v2.02.00)
+const LOOT_CASH = 500_000;         // most money in one drop
+const LOOTW = new Set(['pistol', 'shotgun', 'smg', 'rifle', 'bat', 'lathi', 'knife', 'armour']);
 const REACT = new Set(['👏', '❤️', '🔥', '😂', '🎉', '💃', '🙏', '⭐']);
 const BAD = ['fuck', 'shit', 'bitch', 'chutiya', 'madarchod', 'bhenchod', 'gandu', 'randi', 'harami', 'kamina', 'bastard', 'asshole', 'mc', 'bc'];
 
@@ -307,6 +310,34 @@ export class Region extends DurableObject {
       const g = typeof d.g === 'string' && /^[a-z0-9]{1,12}$/.test(d.g) ? d.g : ''; const s = typeof d.s === 'string' && d.s.length <= 300 ? d.s : '';
       const out = JSON.stringify({ t: 'mg', k: d.k, id: p.id, n: p.name, g, s, m: num(d.m, 0, 1e9) | 0 });
       for (const [w, q] of this.players) if (q.id === d.to) { if (near(p, q, NEAR)) this.send(w, out); break; }
+    } else if (d.t === 'loot') {
+      // Dropped money and weapons (Beta v2.02.00): when a player or a person in the street goes down, what they carried
+      // stays on the ground. Anyone nearby can pick it up; the first to reach it gets it. Kept in memory for 10 minutes.
+      const L = this.loot || (this.loot = new Map());
+      for (const [id, l] of L) if (now - l.at > LOOT_MS) L.delete(id);
+      if (d.k === 'drop') {
+        if (now - (p.lootAt || 0) < 700) return; p.lootAt = now;
+        const x = num(d.x, -1e5, 1e5), z = num(d.z, -1e5, 1e5); if (p.ready && Math.hypot(x - p.x, z - p.z) > 150) return;
+        const c = num(d.c, 0, LOOT_CASH) | 0; const items = (Array.isArray(d.i) ? d.i.slice(0, 6) : []).filter(q => Array.isArray(q) && LOOTW.has(q[0])).map(q => [q[0], num(q[1], 0, 600) | 0]);
+        if (!c && !items.length) return;
+        if (L.size >= 500) L.delete(L.keys().next().value);
+        const l = { id: crypto.randomUUID().replace(/-/g, '').slice(0, 10), x, z, c, i: items, at: now, by: p.name };
+        L.set(l.id, l);
+        const out = JSON.stringify({ t: 'loot', k: 'add', L: [{ id: l.id, x, z, c, i: items, a: 0 }] });
+        for (const [w, q] of this.players) if (w === ws || (q.ready && Math.hypot(q.x - x, q.z - z) < NEAR)) this.send(w, out);
+      } else if (d.k === 'take') {
+        const id = String(d.id || ''); const l = L.get(id);
+        if (!l) return this.send(ws, JSON.stringify({ t: 'loot', k: 'gone', id }));
+        if (Math.hypot(p.x - l.x, p.z - l.z) > 30) return;
+        L.delete(id);
+        this.send(ws, JSON.stringify({ t: 'loot', k: 'got', id, c: l.c, i: l.i }));
+        const out = JSON.stringify({ t: 'loot', k: 'gone', id });
+        for (const [w, q] of this.players) if (w !== ws && q.ready && Math.hypot(q.x - l.x, q.z - l.z) < NEAR) this.send(w, out);
+      } else if (d.k === 'list') {
+        if (now - (p.llAt || 0) < 3000) return; p.llAt = now;
+        const list = []; for (const l of L.values()) if (Math.hypot(p.x - l.x, p.z - l.z) < NEAR && list.length < 80) list.push({ id: l.id, x: l.x, z: l.z, c: l.c, i: l.i, a: now - l.at });
+        this.send(ws, JSON.stringify({ t: 'loot', k: 'add', L: list, all: 1 }));
+      }
     } else if (d.t === 'ping') {
       let city = 0, near1 = 0; for (const q of this.players.values()) { if (!q.ready) continue; if (p.zn && q.zn === p.zn) city++; if (near(p, q, NEAR)) near1++; }
       this.send(ws, JSON.stringify({ t: 'pong', online: this.players.size, city, near: near1, zn: p.zn, ts: Date.now() }));   // ts: the shared clock (Beta v1.01.12)
