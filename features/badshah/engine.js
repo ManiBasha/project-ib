@@ -29,10 +29,11 @@ window.BBFeatures.push(function (bb) {
   const V3 = new T.Vector3();
   const toastS = (t, c) => bb.toast(t, c || '#ffc93c');
   /* ================= the home city and its story anchors ================= */
-  let A = null; // anchors
+  const AC = {}; // anchors by town id
   function seeded(s) { let h = 0; for (const ch of s) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return () => (h = (h * 1103515245 + 12345) >>> 0) / 4294967296; }
   function homeZone() { const s = S(); if (s.home) { const z = W.zones.find(q => q.id === s.home); if (z) return z; } const pp = bb.ppos(); const z = bb.zoneAt(pp.x, pp.z, 300) || W.zones.find(q => q.id === 'mumbai'); s.home = z.id; bb.setDirty(); return z; }
-  function anchors() { if (A && A.zone === S().home) return A; const z = homeZone(); const rnd = seeded(z.id); const cx = z.x0 + z.nx * 40, cz = z.z0 + z.nz * 40;
+  function anchors() { return anchorsOf(homeZone()); }
+  function anchorsOf(z) { if (typeof z === 'string') z = W.zones.find(q => q.id === z); if (!z) z = homeZone(); if (AC[z.id]) return AC[z.id]; const rnd = seeded(z.id); const cx = z.x0 + z.nx * 40, cz = z.z0 + z.nz * 40;
     const inZ = p => p.zone === z || (p.x > z.x0 - 20 && p.x < z.x0 + z.nx * 80 + 20 && p.z > z.z0 - 20 && p.z < z.z0 + z.nz * 80 + 20);
     const near = (type, x, z0, any) => { let b = null, bd = 1e12; for (const p of bb.pois) if (p.type === type && (any || inZ(p))) { const d = Math.hypot(p.x - x, p.z - z0); if (d < bd) { bd = d; b = p; } } return b; };
     const pt = (p, name) => p ? { x: p.x, z: p.z, name: name || p.name } : null;
@@ -48,19 +49,35 @@ window.BBFeatures.push(function (bb) {
     while (shops.length < 3) shops.push(block(.5 + shops.length * .1, .6, 'Shop'));
     const att = (bb.TOUR ? bb.TOUR.ATT() : []).map(a => ({ a, d: Math.hypot(a.x - cx, a.z - cz) })).sort((p, q) => p.d - q.d).slice(0, 3).map(q => ({ x: q.a.door ? q.a.door.x : q.a.x, z: q.a.door ? q.a.door.z : q.a.z, name: q.a.name }));
     const lm = [0, 1, 2].map(k => att[k] || block(.2 + k * .3, .8 - k * .3, ['Old clock tower', 'Lake garden', 'College gate'][k]));
-    A = { zone: z.id, city: z.name, station, garage, market, shops, landmarkA: lm[0], landmarkB: lm[1], landmarkC: lm[2],
+    const A = { zone: z.id, city: z.name, station, garage, market, shops, landmarkA: lm[0], landmarkB: lm[1], landmarkC: lm[2],
       rto: pt(near('rto', cx, cz, true)) || block(.8, .2, 'RTO office'), bank: pt(near('bank', cx, cz, true)) || block(.6, .4, 'Bank'), showroom: pt(near('cars', cx, cz, true)) || block(.7, .7, 'Car showroom'),
       mechanic: mech[1] ? { x: mech[1].x, z: mech[1].z, name: mech[1].name } : pt(near('mechanic', cx + 200, cz, true)) || garage,
       office: block(.85, .2, "Byaaj Bhai's office"), cafe: block(.55, .62, 'Cyber café'), akhada: block(.15, .85, 'Akhada (wrestling ground)'), warehouse: block(1, 1, "The Collector's warehouse"),
       rooftop: block(0, 1, 'Old mill rooftops'), chotu: block(.4, .15, "Chotu's room"), printing: block(.25, .55, 'Printing gali'), bizsite: block(.6, .5, 'Your business'), safehouse: block(.1, .1, 'Safehouse'), highway: (() => { const r = bb.nearestRoadPoint(z.x0 - 120, cz, 400); return r ? { x: r.x, z: r.z, name: 'Highway outside town' } : block(0, .5, 'Highway'); })() };
-    return A; }
-  const at = a => typeof a === 'string' ? (a.includes('.') ? anchors()[a.split('.')[0]][+a.split('.')[1]] : anchors()[a]) : Array.isArray(a) ? { x: a[0], z: a[1], name: a[2] || '' } : a;
+    AC[z.id] = A; return A; }
+  const at0 = (a, A0) => typeof a === 'string' ? (a.includes('.') ? (A0 || anchors())[a.split('.')[0]][+a.split('.')[1]] : (A0 || anchors())[a]) : Array.isArray(a) ? { x: a[0], z: a[1], name: a[2] || '' } : a;
+  // places in other towns: 'mumbai:market', 'mumbai:shops.1', 'mumbai:@Gateway of India' (a named sight or map pin),
+  // 'mumbai:sea' (open water by the town), 'mumbai:dock' (the shore next to it), 'mumbai:hw' (the highway outside town)
+  const SP = {};
+  function at(a) { if (typeof a !== 'string' || !a.includes(':')) return at0(a); if (SP[a]) return SP[a]; const [zid, key] = a.split(/:(.*)/s); const z = W.zones.find(q => q.id === zid); if (!z) { console.warn('story: no town', zid); return at0('garage'); }
+    const A2 = anchorsOf(z), cx = z.x0 + z.nx * 40, cz = z.z0 + z.nz * 40; let r = null;
+    if (key[0] === '@') { const nm = key.slice(1).toLowerCase(); let best = null, bd = 1e12; const cand = [];
+        for (const p of W.places || []) cand.push({ name: p[0], x: p[1], z: p[2] }); for (const q of (bb.TOUR ? bb.TOUR.ATT() : [])) cand.push({ name: q.name, x: q.door ? q.door.x : q.x, z: q.door ? q.door.z : q.z });
+        for (const c of cand) if (c.name.toLowerCase().includes(nm)) { const d = Math.hypot(c.x - cx, c.z - cz); if (d < bd) { bd = d; best = c; } }
+        r = best && bd < 3000 ? Object.assign({}, best, { name: best.name }) : Object.assign({}, A2.landmarkA, { name: key.slice(1) });
+        if (r && (bb.isWater(r.x, r.z))) { const rp = bb.nearestRoadPoint(r.x, r.z, 200); if (rp) { r.x = rp.x; r.z = rp.z; } } }
+    else if (key === 'sea' || key === 'dock') { const w = bb.BOATS ? bb.BOATS.waterSpotNear(cx, cz, 2500) : null; if (w) { if (key === 'sea') r = { x: w.x, z: w.z, name: `the water off ${z.name}` }; else { let lx = w.x, lz = w.z; const dx = cx - w.x, dz = cz - w.z, d = Math.hypot(dx, dz) || 1; for (let k = 0; k < 400 && bb.isWater(lx, lz); k++) { lx += dx / d * 3; lz += dz / d * 3; } r = { x: lx + dx / d * 3, z: lz + dz / d * 3, name: `${z.name} waterfront` }; } } else r = Object.assign({}, A2.station); }
+    else if (key === 'sea2') { const w0 = bb.BOATS ? bb.BOATS.waterSpotNear(cx, cz, 2500) : null; const w = w0 && bb.BOATS.waterSpotNear(w0.x + 350, w0.z + 250, 1500); r = w ? { x: w.x, z: w.z, name: `the far water off ${z.name}` } : Object.assign({}, A2.station); }
+    else if (key === 'hw') r = Object.assign({}, A2.highway, { name: `the highway near ${z.name}` });
+    else r = at0.call(null, key, A2);
+    if (r && key[0] !== '@' && !r.name) r.name = z.name; SP[a] = r; return r; }
   const fill = t => String(t || '').replace(/\{(\w+)\}/g, (m, k) => k === 'city' ? anchors().city : k === 'debt' ? bb.inr(DEBT()) : k === 'paid' ? bb.inr(S().paid || 0) : k === 'left' ? bb.inr(Math.max(0, DEBT() - (S().paid || 0))) : anchors()[k] ? anchors()[k].name : m);
   /* ================= dialogue card ================= */
   const card = document.createElement('div'); card.id = 'bsCard'; card.hidden = true;
   card.style.cssText = 'position:fixed;left:50%;bottom:118px;transform:translateX(-50%);width:min(520px,calc(100vw - 32px));z-index:61;background:rgba(14,16,22,.95);color:#f4f1ea;border:1px solid rgba(242,193,78,.7);border-radius:14px;padding:12px 14px;font:14.5px/1.45 system-ui,sans-serif;box-shadow:0 8px 30px rgba(0,0,0,.45)';
   document.body.appendChild(card);
   const WHO = { you: ['You', '#9fd0ff'], master: ['Master-ji', '#f2c14e'], byaaj: ['Byaaj Bhai', '#ff9f1c'], rani: ['Rani', '#ff6fa8'], chotu: ['Chotu', '#7fd858'], pehelwan: ['Pehelwan', '#e8573e'], babu: ['Babu', '#c9a0ff'], meera: ['Inspector Meera Joshi', '#5fb4ff'], collector: ['The Collector', '#ff5d73'], vikram: ['Vikram (voice note)', '#d6c8e4'], goon: ['Goon', '#ff8b8b'], narrator: ['', '#d6c8e4'], shop: ['Shopkeeper', '#f4f1ea'] };
+  Object.assign(WHO, DATA.who || {});
   let talk = null;
   function showTalk() { if (!talk) { card.hidden = true; return; } const [w, text] = talk.lines[talk.i]; const [nm, col] = WHO[w] || [w, '#fff'];
     card.innerHTML = `${talk.phone ? '<div style="font-size:12px;opacity:.7">📞 Phone call</div>' : ''}${nm ? `<div style="font-weight:800;color:${col};margin-bottom:2px">${esc(nm)}</div>` : ''}<div${w === 'narrator' ? ' style="font-style:italic;opacity:.9"' : ''}>${esc(fill(text))}</div><div style="display:flex;justify-content:flex-end;gap:8px;margin-top:8px"><button data-k="skip" style="background:transparent;color:#aaa;border:0">Skip</button><button data-k="next" style="background:#f2c14e;color:#1b1b1f;border:0;border-radius:9px;padding:5px 14px;font-weight:800">${talk.i < talk.lines.length - 1 ? 'Next ▸' : 'OK'}</button></div>`; card.hidden = false; }
@@ -89,7 +106,7 @@ window.BBFeatures.push(function (bb) {
   bb.onFire(() => { if (!run || pl.mode !== 'foot' || pl.fireCd > 0 || bb.inside) return false; const p = P(); const Wp = bb.WEAP[p.weapon] || bb.WEAP.fist; const ox = pl.pos.x, oz = pl.pos.z;
     const cone = Wp.melee ? 1.1 : .35; let best = null, bd = 1e9;
     for (const n of NPC) { if (n.ally || n.state === 'down') continue; const dx = n.x - ox, dz = n.z - oz, d = Math.hypot(dx, dz); if (d > Wp.range + (Wp.melee ? .4 : 0)) continue; const da = angD(Math.atan2(dx, dz), pl.h); if (da < cone && d < bd) { bd = d; best = n; } }
-    let veh = null; if (!best && !Wp.melee && chaseV && !chaseV.dead) { const dx = chaseV.pos.x - ox, dz = chaseV.pos.z - oz, d = Math.hypot(dx, dz); if (d < Wp.range + 4 && angD(Math.atan2(dx, dz), pl.h) < .4) veh = chaseV; }
+    let veh = null; if (!best && !Wp.melee) for (const tv of NV) { if (!tv.target || tv.hp <= 0) continue; const dx = tv.pos.x - ox, dz = tv.pos.z - oz, d = Math.hypot(dx, dz); if (d < Wp.range + 4 && angD(Math.atan2(dx, dz), pl.h) < .4) { veh = tv; break; } }
     if (!best && !veh) return false;
     if (Wp.ammo) { if (!(p.ammo[Wp.ammo] > 0)) return false; p.ammo[Wp.ammo]--; bb.updWeap(); }
     pl.fireCd = Wp.rate; pl.anim = .25; pl.h = Math.atan2((best || veh.pos).x - ox, (best || veh.pos).z - oz);
@@ -128,33 +145,62 @@ window.BBFeatures.push(function (bb) {
   /* ================= the mission runner ================= */
   let run = null, cur = null; // cur = { m, i, st (step state) }
   const stepOf = () => cur && cur.m.steps[cur.i];
-  function begin(m) { if (cur) { const st0 = stepOf(); if (st0 && STEP[st0.type] && STEP[st0.type].end) STEP[st0.type].end(st0, cur.st); } clearNPC(); clearNV(); talk = null; card.hidden = true; const s = S(); s.cur = { id: m.id, i: 0, ck: 0 }; bb.setDirty(); cur = { m, i: 0, st: {} }; run = true; bb.big && bb.big(m.title.toUpperCase(), '#f2c14e'); toastS(`👑 ${m.id} · ${m.title}`, '#f2c14e'); bb.emit('storyStart', m.id); enter(); }
+  function begin(m) { if (cur) { const st0 = stepOf(); if (st0 && STEP[st0.type] && STEP[st0.type].end) STEP[st0.type].end(st0, cur.st); } clearNPC(); clearNV(); talk = null; card.hidden = true; const s = S(); s.cur = { id: m.id, i: 0, ck: 0 }; bb.setDirty(); cur = { m, i: 0, st: {}, diff: diffOf(m) }; m.slack = m.slack || cur.diff.slack; run = true; bb.big && bb.big(m.title.toUpperCase(), '#f2c14e'); toastS(`👑 ${m.id} · ${m.title}`, '#f2c14e'); bb.emit('storyStart', m.id); enter(); }
   function enter() { const st = stepOf(); if (!st) return complete(); cur.st = { t0: performance.now(), n: 0 }; const fn = STEP[st.type]; if (!fn) { console.warn('story: unknown step', st.type); return next(); } (fn.start || (() => {}))(st, cur.st); }
   function next() { if (!cur) return; const st = stepOf(); if (st && STEP[st.type] && STEP[st.type].end) STEP[st.type].end(st, cur.st); cur.i++; S().cur.i = cur.i; bb.setDirty(); enter(); }
   function checkpoint() { S().cur.ck = cur.i + 1; bb.save(); }
   function fail(why) { if (!cur) return; const m = cur.m; const st = stepOf(); if (st && STEP[st.type] && STEP[st.type].end) STEP[st.type].end(st, cur.st); talk = null; card.hidden = true; clearNPC(); clearNV(); run = false; const ck = S().cur.ck || 0; cur = null;
     bb.big && bb.big('MISSION FAILED', '#ff5d73'); setTimeout(() => bb.openSheet('👑 Mission failed', esc(why || ''), bb.rowHtml('retry', `Try again from the ${ck ? 'checkpoint' : 'start'}`, 'Free · nothing is lost', 'Retry') + bb.rowHtml('later', 'Later', 'Do some jobs or explore first', 'Later', 'ghost'),
-      s => s.onclick = e => { const id = e.target.dataset.id; if (id === 'retry') { bb.closeSheet(); cur = { m, i: ck, st: {} }; S().cur = { id: m.id, i: ck, ck }; run = true; enter(); } else if (id === 'later') { S().cur = null; bb.setDirty(); bb.closeSheet(); } }), 1800); }
+      s => s.onclick = e => { const id = e.target.dataset.id; if (id === 'retry') { bb.closeSheet(); cur = { m, i: ck, st: {}, diff: diffOf(m) }; S().cur = { id: m.id, i: ck, ck }; run = true; enter(); } else if (id === 'later') { S().cur = null; bb.setDirty(); bb.closeSheet(); } }), 1800); }
   function complete() { const m = cur.m, s = S(); clearNPC(); clearNV(); run = false; cur = null; s.done[m.id] = today(); s.cur = null; s.day = s.day.d === today() ? { d: today(), n: s.day.n + 1 } : { d: today(), n: 1 };
-    const r = m.reward || {}; if (r.izzat) s.izzat = (s.izzat || 0) + r.izzat; let cash = 0; if (r.cash) { cash = Math.round(bb.price(r.cash) * mult()); P().cash += cash; }
+    const r = m.reward || {}; if (r.izzat) s.izzat = (s.izzat || 0) + r.izzat; let cash = 0; const base = r.cash != null ? r.cash : cashTier(m); if (base) { cash = Math.round(bb.price(base) * mult()); P().cash += cash; }
+    if (m.arc && KINGS[m.arc] && m.n === 9) { s.pages = s.pages || []; if (!s.pages.includes(m.arc)) s.pages.push(m.arc); s.curKing = null; s.izzat = (s.izzat || 0) + 100; }
     bb.save(); bb.big && bb.big('MISSION PASSED', '#3ddc97'); bb.emit('storyDone', m.id);
     setTimeout(() => { const nx = nextMission(); bb.openSheet(`👑 ${esc(m.title)} · passed`, `${m.id}${cash ? ' · +' + bb.inr(cash) : ''}${r.izzat ? ' · Izzat +' + r.izzat : ''}`, (r.note ? `<p class="note">${esc(fill(r.note))}</p>` : '') + (nx ? bb.rowHtml('x', `Next: ${esc(nx.m.title)}`, nx.ok ? 'Ready now · go to the 👑 marker' : esc(nx.why), '', 'ghost') : bb.rowHtml('x', 'That is all for now', 'More of the story is coming in the next update', '', 'ghost')), () => {}); }, 2200); }
   bb.on('ko', () => { if (run && !(cur && cur.m.koOk)) setTimeout(() => fail('You were knocked out'), 400); });
   bb.on('bust', () => { if (run) setTimeout(() => fail('You were busted'), 400); });
   /* ================= which mission is next, and can it be played now ================= */
-  function nextMission() { const s = S(); for (const m of MIS) { if (s.done[m.id]) continue; if (m.after && !m.after.every(a => s.done[a])) continue; return { m, ...canPlay(m) }; } return null; }
+  // Act 3: the kings are hunted one at a time. The first is the home king (from the home city's state); after that the
+  // player picks any king not yet beaten (Phone → Badshah). Interlude I-1 plays after the 4th king, I-2 after the 6th.
+  const KINGS = DATA.kings || {}; const KIDS = Object.keys(KINGS);
+  const arcMis = k => MIS.filter(m => m.arc === k);
+  const kingDone = k => { const L = arcMis(k); return L.length && L.every(m => S().done[m.id]); };
+  function homeKing() { const st = homeZone().st; for (const k of KIDS) if ((KINGS[k].states || []).includes(st)) return k; return KIDS[0]; }
+  function slotOf(k) { const s = S(); const i = (s.kings || []).indexOf(k); return i < 0 ? (s.kings || []).length + 1 : i + 1; }
+  function nextMission() { const s = S(); s.kings = s.kings || [];
+    for (const m of MIS) { if (m.arc) continue; if (s.done[m.id]) continue; if (m.after && !m.after.every(a => s.done[a])) continue; return { m, ...canPlay(m) }; }
+    if (!KIDS.length) return null;
+    const beaten = KIDS.filter(kingDone).length;
+    if (s.curKing && kingDone(s.curKing)) s.curKing = null;
+    if (!s.curKing) {
+      for (const [n, id] of [[4, 'I-1'], [6, 'I-2']]) if (beaten >= n && BYID[id] && !s.done[id]) return { m: BYID[id], ...canPlay(BYID[id]) };
+      if (beaten < KIDS.length) { if (!s.kings.length) { s.curKing = homeKing(); s.kings.push(s.curKing); bb.setDirty(); } else return { pick: true, m: { id: 'K?', title: 'Choose the next king', start: 'garage' }, ok: false, why: 'Choose the next king to hunt: Phone → 👑 Badshah' }; }
+      else { for (const m of MIS) if (m.arc === 'final' && !s.done[m.id]) return { m, ...canPlay(m) }; return null; } }
+    for (const m of arcMis(s.curKing)) if (!s.done[m.id]) return { m, ...canPlay(m) };
+    return null; }
+  function lastDoneDate(filter) { let d = ''; for (const m of MIS) if (filter(m) && S().done[m.id] > d) d = S().done[m.id]; return d; }
   function canPlay(m) { const s = S(); if (gatesOff()) return { ok: true };
     const n = s.day.d === today() ? s.day.n : 0; if (n >= 3) return { ok: false, why: 'Daily limit reached (3 story missions a day) · back tomorrow, or do jobs and explore' };
-    if (m.nextDay) { const prev = MIS[MIS.indexOf(m) - 1]; if (prev && s.done[prev.id] && s.done[prev.id] >= today()) return { ok: false, why: m.gateText || 'Opens tomorrow · your informant calls in the morning' }; }
+    if (m.nextDay) { let prevDate = ''; if (m.arc && m.n === 1 || m.id === 'I-1' || m.id === 'I-2' || m.id === 'F-01') prevDate = lastDoneDate(q => q.n === 9 || q.id === 'A2-12' || q.id === 'I-1' || q.id === 'I-2');
+      else if (m.arc) { const L = MIS.filter(q => q.arc === m.arc); const i = L.indexOf(m); prevDate = i > 0 ? s.done[L[i - 1].id] || '' : ''; }
+      else { const prev = MIS[MIS.indexOf(m) - 1]; prevDate = prev ? s.done[prev.id] || '' : ''; }
+      if (prevDate && prevDate >= today()) return { ok: false, why: m.gateText || (m.n === 1 ? 'Lay low today · the next king can wait until tomorrow' : 'Opens tomorrow · your informant calls in the morning') }; }
     return { ok: true }; }
+  // difficulty from the order the king is hunted: kings 1–3 moderate, 4–8 and the finale hard; within an arc missions 7–9 are the top of the tier
+  function diffOf(m) { if (!m || !m.arc) return m && m.id && m.id.startsWith('A2') ? { hard: false, k: 1, hp: 1, slack: 1.25 } : { hard: false, k: 1, hp: 0, slack: 1.5 };
+    const hard = m.arc === 'final' || m.arc === 'i' || slotOf(m.arc) > 3; const top = (m.n || 0) >= 7; return { hard, k: (hard ? 1.4 : 1.1) + (top ? .2 : 0), hp: (hard ? 2 : 1) + (top ? 1 : 0), slack: hard ? 1 : 1.25 }; }
+  const UPG = { fist: 'knife', bat: 'pistol', lathi: 'pistol', knife: 'pistol', pistol: 'smg', smg: 'rifle' };
+  function scaled(st) { const d = cur ? cur.diff : { k: 1, hp: 0, hard: false }; const w = st.weapon; const up = x => d.hard && Math.random() < .5 ? UPG[x] || x : x; return { n: Math.max(1, Math.round((st.n || 1) * d.k)), hp: (st.hp || 3) + d.hp, weapon: Array.isArray(w) ? w.map(up) : w ? up(w) : (d.hard ? 'pistol' : 'bat') }; }
+  function cashTier(m) { if (!m.arc) return 0; if (m.arc === 'final') return m.n === 8 ? 2000000 : 400000; if (m.arc === 'i') return 100000; const d = diffOf(m); const lo = d.hard ? 100000 : 50000, hi = d.hard ? 400000 : 200000; return m.n === 9 ? (d.hard ? 1000000 : 500000) : Math.round((lo + (hi - lo) * ((m.n || 1) - 1) / 7) / 5000) * 5000; }
   /* ================= HUD: objective and marker ================= */
   bb.addMission(() => { if (talk) return null; const pp = bb.ppos();
     if (cur) { const st = stepOf(); if (!st) return null; const fn = STEP[st.type]; const h = fn && fn.hud ? fn.hud(st, cur.st) : null; if (!h) return null; const tg = h.target;
       return { pri: st.type === 'job' ? 40 : 95, cls: 'story', k: `👑 ${cur.m.title}${h.k ? ' · ' + h.k : ''}`, t: fill(h.t), m: (tg ? `${Math.round(Math.hypot(pp.x - tg.x, pp.z - tg.z) * 2.4 / 10) * 10} m · ` : '') + fill(h.m || ''), target: tg ? { x: tg.x, z: tg.z, col: tg.col || 0xf2c14e } : null }; }
-    const nx = nextMission(); if (!nx) return null; const at0 = at(nx.m.start || 'garage'); if (!nx.ok) return { pri: 15, k: `👑 Badshah · ${nx.m.id}`, t: nx.m.title, m: nx.why };
-    return { pri: 30, k: `👑 Badshah · ${nx.m.id}`, t: nx.m.title, m: `Go to the 👑 marker · ${at0.name}`, target: { x: at0.x, z: at0.z, col: 0xf2c14e } }; });
+    const nx = nextMission(); if (!nx) return null; if (nx.pick) return { pri: 15, k: '👑 Badshah', t: nx.m.title, m: nx.why }; const at0 = at(nx.m.start || 'garage'); if (!nx.ok) return { pri: 15, k: `👑 Badshah · ${nx.m.id}`, t: nx.m.title, m: nx.why };
+    const far = Math.hypot(pp.x - at0.x, pp.z - at0.z) > 2500; const zz = bb.zoneAt(at0.x, at0.z, 300);
+    return { pri: 30, k: `👑 Badshah · ${nx.m.id}`, t: nx.m.title, m: far ? `Travel to ${zz ? zz.name : 'the marker'}: train or flight (Phone → BayTraveler), or drive · then the 👑 marker` : `Go to the 👑 marker · ${at0.name}`, target: { x: at0.x, z: at0.z, col: 0xf2c14e } }; });
   // the start marker: walk or drive into it
-  bb.onUpdate((dt, now) => { if (!bb.started) return; if (!run) { const nx = nextMission(); if (nx && nx.ok && !(bb.CINE && bb.CINE.on) && !bb.inside) { const a0 = at(nx.m.start || 'garage'); const pp = bb.ppos(); if (Math.hypot(pp.x - a0.x, pp.z - a0.z) < 6) begin(nx.m); } } else { updNPC(dt, now); const st = stepOf(); if (st && STEP[st.type] && STEP[st.type].update) STEP[st.type].update(st, cur.st, dt, now); } });
+  bb.onUpdate((dt, now) => { if (!bb.started) return; if (!run) { const nx = nextMission(); if (nx && nx.ok && !nx.pick && !(bb.CINE && bb.CINE.on) && !bb.inside) { const a0 = at(nx.m.start || 'garage'); const pp = bb.ppos(); if (Math.hypot(pp.x - a0.x, pp.z - a0.z) < 6) begin(nx.m); } } else { updNPC(dt, now); const st = stepOf(); if (st && STEP[st.type] && STEP[st.type].update) STEP[st.type].update(st, cur.st, dt, now); } });
   /* ================= step types ================= */
   const reach = (p, r) => { const pp = bb.ppos(); return Math.hypot(pp.x - p.x, pp.z - p.z) < (r || 7); };
   const inVeh = types => pl.mode === 'drive' && pl.veh && (!types || types.includes(pl.veh.type));
@@ -195,7 +241,7 @@ window.BBFeatures.push(function (bb) {
     repair: { update: (st) => { if (P().cars.some(c => ['car', 'sedan', 'suv', 'mpv', 'taxi'].includes(c.type) && c.hp >= 99)) next(); }, hud: (st) => ({ t: st.text, m: 'Drive it to the mechanic and ask for a repair', target: at('mechanic') }) },
     biz: { start: (st, s) => { s.n0 = (P().biz || []).length; }, update: (st, s) => { if ((P().biz || []).length > s.n0) next(); }, hud: (st) => ({ t: st.text, m: 'Phone → Business · stand where you want it and open it', target: at('bizsite') }) },
     cashpay: { start: (st, s) => { s.amt = st.amt; }, update: (st, s) => { if (P().cash + P().bank >= s.amt && bb.spend(s.amt, true)) { toastS(`Paid ${bb.inr(s.amt)} · ${st.what || ''}`, '#ffc93c'); next(); } }, hud: (st, s) => ({ t: st.text, m: `${bb.inr(P().cash + P().bank)} of ${bb.inr(s.amt)}` }) },
-    fight: { start: (st, s) => { const c = at(st.at); s.c = c; s.n = 0; const n = st.n; for (let k = 0; k < n; k++) { const a = k / n * 6.28, r = (st.r || 9) + Math.random() * 4; spawn({ x: c.x + Math.cos(a) * r, z: c.z + Math.sin(a) * r, weapon: Array.isArray(st.weapon) ? st.weapon[k % st.weapon.length] : st.weapon || 'fist', hp: st.hp || 3, dmg: st.dmg || 5 }); }
+    fight: { start: (st, s) => { const c = at(st.at); s.c = c; s.n = 0; const sc = scaled(st); const n = sc.n; for (let k = 0; k < n; k++) { const a = k / n * 6.28, r = (st.r || 9) + Math.random() * 4; spawn({ x: c.x + Math.cos(a) * r, z: c.z + Math.sin(a) * r, weapon: Array.isArray(sc.weapon) ? sc.weapon[k % sc.weapon.length] : sc.weapon || 'fist', hp: sc.hp, dmg: st.dmg || 5 }); }
         for (const al of st.allies || []) spawn({ x: c.x + 3, z: c.z + 3, ally: true, name: (WHO[al] || [al])[0], col: al === 'pehelwan' ? '#e8573e' : '#ff6fa8', hp: 99, speed: 3.6 }); },
       update: (st, s) => { if (!foes().length) { for (const n of NPC.filter(q => q.ally)) bb.scene.remove(n.g); NPC.splice(0, NPC.length, ...NPC.filter(q => !q.ally)); next(); } },
       hud: (st, s) => ({ k: `${foes().length} left`, t: st.text || 'Beat them', m: st.sub || 'Fists: click / F · guns: aim and shoot', target: foes()[0] ? { x: foes()[0].x, z: foes()[0].z, col: 0xff5d73 } : s.c }) },
@@ -204,13 +250,13 @@ window.BBFeatures.push(function (bb) {
       update: (st, s, dt) => { const site = s.sites[st.sequential ? s.cur : 0]; if (s.sites.some(q => q.hp <= 0)) return fail(`${s.sites.find(q => q.hp <= 0).name} was wrecked`);
         if (s.allyHeld) for (let k = 1; k < s.sites.length; k++) s.sites[k].hp = Math.max(25, s.sites[k].hp - dt * .6);
         if (!foes().length) { s.cd -= dt; if (s.cd > 0) return; if (s.wave >= st.waves) { if (st.sequential && s.cur < s.sites.length - 1) { s.cur++; s.wave = 0; s.cd = 3; toastS(`Next: ${s.sites[s.cur].name}`, '#ffc93c'); return; } return next(); }
-          s.wave++; s.cd = 3; toastS(`Wave ${s.wave} of ${st.waves}`, '#ff9f1c'); const c = st.sequential ? s.sites[s.cur] : site; for (let k = 0; k < st.n; k++) { const a = Math.random() * 6.28, r = 26 + Math.random() * 10; const n = spawn({ x: c.x + Math.cos(a) * r, z: c.z + Math.sin(a) * r, weapon: Array.isArray(st.weapon) ? bb.mpick(st.weapon) : st.weapon || 'bat', hp: st.hp || 3, dmg: st.dmg || 5 }); n.site = c; n.siteDmg = st.siteDmg || 3; } } },
+          s.wave++; s.cd = 3; toastS(`Wave ${s.wave} of ${st.waves}`, '#ff9f1c'); const c = st.sequential ? s.sites[s.cur] : site; const sc = scaled(st); for (let k = 0; k < sc.n; k++) { const a = Math.random() * 6.28, r = 26 + Math.random() * 10; const n = spawn({ x: c.x + Math.cos(a) * r, z: c.z + Math.sin(a) * r, weapon: Array.isArray(sc.weapon) ? bb.mpick(sc.weapon) : sc.weapon || 'bat', hp: sc.hp, dmg: st.dmg || 5 }); n.site = c; n.siteDmg = st.siteDmg || 3; } } },
       hud: (st, s) => { const c = s.sites[st.sequential ? s.cur : 0]; return { k: `wave ${s.wave}/${st.waves}`, t: st.text || `Defend ${c.name}`, m: s.sites.map(q => `${q.name.split(',')[0]} ${Math.round(q.hp)}%`).join(' · '), target: foes()[0] ? { x: foes()[0].x, z: foes()[0].z, col: 0xff5d73 } : c }; } },
     bout: { start: (st, s) => { s.round = 0; s.won = 0; s.lost = 0; P().weapon = 'fist'; bb.updWeap(); roundStart(st, s); },
       update: (st, s) => { if (!s.boss) return; if (P().health < s.h0 - 40 || P().health < 15) { s.lost++; toastS(`${st.name} wins round ${s.round}`, '#ff5d73'); P().health = Math.max(P().health, 60); endRound(st, s); } else if (s.boss.state === 'down') { s.won++; toastS(`You win round ${s.round}!`, '#3ddc97'); endRound(st, s); } },
       hud: (st, s) => ({ k: `round ${s.round}/3 · ${s.won}–${s.lost}`, t: `Beat ${st.name} (fists only)`, m: 'Win 2 of 3 rounds', target: s.boss ? { x: s.boss.x, z: s.boss.z, col: 0xff5d73 } : null }) },
-    boss: { start: (st, s) => { const c = at(st.at); s.phase = 0; let flee = []; { let from = c; for (const f of (st.flee || []).map(at)) { const r = route(from, f); for (let q = 20; q < r.L; q += 20) { const a2 = along(r, q); flee.push({ x: a2.x, z: a2.z }); } flee.push(f); from = f; } } s.b = spawn({ x: c.x, z: c.z, name: st.name, boss: true, hp: st.hp || 12, weapon: st.weapon || 'fist', speed: 3.4, dmg: st.dmg || 7, col: '#f4f1ea' }); s.b.flee = flee.slice(); s.b.fleeSpeed = 4.6;
-        s.b.onDown = n => { if (s.phase < (st.phases || 1) - 1) { s.phase++; n.hp = n.max; drawBar(n); n.weapon = st.phase2Weapon || n.weapon; toastS(st.phaseText || `${st.name} gets back up!`, '#ff5d73'); const k = st.goons || 0; for (let q = 0; q < k; q++) { const a = Math.random() * 6.28; spawn({ x: n.x + Math.cos(a) * 12, z: n.z + Math.sin(a) * 12, weapon: bb.mpick(st.goonWeapons || ['bat', 'knife']), hp: 3, dmg: 5 }); } } else knock(n); }; },
+    boss: { start: (st, s) => { const c = at(st.at); s.phase = 0; let flee = []; { let from = c; for (const f of (st.flee || []).map(at)) { const r = route(from, f); for (let q = 20; q < r.L; q += 20) { const a2 = along(r, q); flee.push({ x: a2.x, z: a2.z }); } flee.push(f); from = f; } } s.b = spawn({ x: c.x, z: c.z, name: st.name, boss: true, hp: (st.hp || 12) + (cur.diff.hard ? 6 : 0), weapon: st.weapon || 'fist', speed: 3.4, dmg: st.dmg || 7, col: '#f4f1ea' }); s.b.flee = flee.slice(); s.b.fleeSpeed = 4.6;
+        s.b.onDown = n => { if (s.phase < (st.phases || 1) - 1) { s.phase++; n.hp = n.max; drawBar(n); n.weapon = st.phase2Weapon || n.weapon; toastS(st.phaseText || `${st.name} gets back up!`, '#ff5d73'); const k = Math.round((st.goons || 0) * cur.diff.k); for (let q = 0; q < k; q++) { const a = Math.random() * 6.28; spawn({ x: n.x + Math.cos(a) * 12, z: n.z + Math.sin(a) * 12, weapon: bb.mpick(st.goonWeapons || ['bat', 'knife']), hp: 3, dmg: 5 }); } } else knock(n); }; },
       update: (st, s) => { if (s.b.state === 'down' && !foes().length) next(); },
       hud: (st, s) => ({ k: s.b.flee.length ? 'chase' : `phase ${s.phase + 1}/${st.phases || 1}`, t: s.b.flee.length ? `Catch ${st.name}` : `Beat ${st.name}`, m: s.b.flee.length ? 'Run after him · he stops when you corner him' : 'Knock him down', target: { x: s.b.x, z: s.b.z, col: 0xff5d73 } }) },
     stars: { start: (st, s) => { if (st.add) { pl.stars = 0; bb.addWanted(st.add, st.why || 'Police'); } s.t = 0; }, update: (st, s, dt) => { s.t += dt; if (pl.stars === 0 && s.t > 1) next(); },
@@ -220,7 +266,7 @@ window.BBFeatures.push(function (bb) {
         if (reach(s.fin, 12)) { s.v.v = 0; if ((v.s || 0) < s.r.L - 12) { s.won = true; return next(); } } if ((v.s || 0) >= s.r.L - 2) { if (st.mustWin === false) return next(); return fail(`${(WHO[st.rival] || [st.rival || 'The rival'])[0]} got there first`); } },
       end: (st, s) => { if (s.v) { bb.removeVeh(s.v); NV.splice(NV.indexOf(s.v), 1); } },
       hud: (st, s) => ({ k: s.go > 0 ? 'get ready' : 'race', t: st.text || `Race to ${s.fin.name}`, m: `${(WHO[st.rival] || [st.rival || 'Rival'])[0]} is ${Math.round(Math.max(0, s.r.L - (s.v.s || 0)) * 2.4)} m from the finish`, target: s.fin }) },
-    chase: { start: (st, s) => { const a = at(st.at), b = at(st.to); s.r = route(a, b); const v = npcVeh(st.veh || 'truck', a.x, a.z, along(s.r, 0).h); v.v = 0; v.hp = 100; v.s = 0; s.v = v; chaseV = v; s.rt = 0; },
+    chase: { start: (st, s) => { const a = at(st.at), b = at(st.to); s.r = route(a, b); const v = npcVeh(st.veh || 'truck', a.x, a.z, along(s.r, 0).h); v.v = 0; v.hp = 100; v.s = 0; v.target = true; s.v = v; chaseV = v; s.rt = 0; },
       update: (st, s, dt) => { const v = s.v, pp = bb.ppos(); const d = Math.hypot(pp.x - v.pos.x, pp.z - v.pos.z);
         if (v.hp > 0) { const tgt = (st.speed || 14) * (d > 120 ? .7 : 1); v.v += Math.sign(tgt - v.v) * Math.min(Math.abs(tgt - v.v), 6 * dt); driveAlong(v, s.r, dt); s.rt -= dt;
           if (pl.mode === 'drive' && pl.veh && d < v.spec.len / 2 + pl.veh.spec.len / 2 + 1 && s.rt <= 0 && Math.abs(pl.veh.v) > 6) { s.rt = 1; v.hp -= 20; pl.veh.v *= .6; bb.hornSfx && bb.hornSfx(); toastS(`💥 Rammed · ${Math.max(0, v.hp)}%`, '#ff9f1c'); }
@@ -249,30 +295,90 @@ window.BBFeatures.push(function (bb) {
       update: (st, s) => { const n = s.n; n.foe = null; const pp = bb.ppos(); if (pl.mode === 'drive') { n.g.visible = false; n.x = pp.x; n.z = pp.z; } else n.g.visible = true; if (reach(s.p, 8)) { bb.scene.remove(n.g); NPC.splice(NPC.indexOf(n), 1); next(); } },
       hud: (st, s) => ({ t: st.text || `Take ${(WHO[st.who] || [st.who])[0]} to ${s.p.name}`, m: 'They follow you, on foot or in your vehicle', target: s.p }) },
     wait: { update: (st, s) => { if (performance.now() - s.t0 > (st.sec || 2) * 1000) next(); } },
-    choice: { start: (st) => next() },
+    // ---------- Beta v2.04.00: steps for the kings and the finale ----------
+    meet: { start: (st, s) => { s.p = at(st.at); s.n = spawn({ x: s.p.x + 1.5, z: s.p.z + 1.5, ally: true, name: (WHO[st.who] || [st.who])[0], col: st.col || '#7fd858', hp: 99, speed: 0 }); s.n.still = true; },
+      update: (st, s) => { if (reach(s.p, 6)) next(); }, end: (st, s) => { if (s.n) { bb.scene.remove(s.n.g); const i = NPC.indexOf(s.n); if (i >= 0) NPC.splice(i, 1); } },
+      hud: (st, s) => ({ t: st.text || `Meet ${(WHO[st.who] || [st.who])[0]} at ${s.p.name}`, m: st.sub || '', target: s.p }) },
+    boat: { start: (st, s) => { const p0 = at(st.at); const w = bb.BOATS.waterSpotNear(p0.x, p0.z, 2500) || p0; s.p = w; let b = NV.find(v => v.type === 'speedboat' && v.mine); if (!b) { b = bb.makeVeh('speedboat', w.x, w.z, 0, 'parked', { fuel: 100, company: true }); b.mine = true; b.company = true; NV.push(b); } s.b = b; cur.boat = b; },
+      update: (st, s) => { if (pl.mode === 'drive' && pl.veh === s.b) next(); },
+      hud: (st, s) => ({ t: st.text || 'Get in the speedboat', m: 'Swim or walk to it and press E', target: { x: s.b.pos.x, z: s.b.pos.z } }) },
+    waterchase: { start: (st, s) => { const pp = bb.ppos(); s.left = (st.time || 180) * (cur.m.slack || 1); s.boats = []; const n = Math.max(1, Math.round((st.n || 1) * (st.mode === 'escape' ? cur.diff.k : 1)));
+        for (let k = 0; k < n; k++) { const a = Math.random() * 6.28; let x = pp.x + Math.cos(a) * (st.mode === 'escape' ? 70 : 45), z = pp.z + Math.sin(a) * (st.mode === 'escape' ? 70 : 45); const w = bb.BOATS.waterSpotNear(x, z, 300); if (!w) continue; const b = npcVeh('speedboat', w.x, w.z, a); b.v = 0; b.hp = 100; b.target = st.mode !== 'escape'; b.rt = 0; b.wh = a; b.colorDark = true; s.boats.push(b); }
+        if (st.to) s.to = at(st.to); },
+      update: (st, s, dt, now) => { s.left -= dt; const pp = bb.ppos(); const pv = pl.veh;
+        for (const b of s.boats) { if (b.hp <= 0) { b.v *= .95; continue; } let want; if (st.mode === 'escape') want = Math.atan2(pp.x - b.pos.x, pp.z - b.pos.z); else { if (!b.goal || Math.hypot(b.goal.x - b.pos.x, b.goal.z - b.pos.z) < 15) { let g = null; for (let t = 0; t < 12 && !g; t++) { const a = b.wh + (Math.random() - .5) * 1.6, r = 60 + Math.random() * 60, x = b.pos.x + Math.sin(a) * r, z = b.pos.z + Math.cos(a) * r; if (bb.isWater(x, z) && bb.isWater((x + b.pos.x) / 2, (z + b.pos.z) / 2)) g = { x, z, a }; } if (!g) { b.wh += Math.PI * .7; g = { x: b.pos.x + Math.sin(b.wh) * 30, z: b.pos.z + Math.cos(b.wh) * 30, a: b.wh }; } b.goal = g; b.wh = g.a; } want = Math.atan2(b.goal.x - b.pos.x, b.goal.z - b.pos.z); }
+          let dh = want - b.h; while (dh > Math.PI) dh -= 6.283; while (dh < -Math.PI) dh += 6.283; b.h += Math.max(-1.6 * dt, Math.min(1.6 * dt, dh)); const tgt = (st.speed || 20) * (st.mode === 'escape' ? 1 : (Math.hypot(pp.x - b.pos.x, pp.z - b.pos.z) > 150 ? .6 : 1)); b.v += Math.sign(tgt - b.v) * Math.min(Math.abs(tgt - b.v), 8 * dt);
+          const nx = b.pos.x + Math.sin(b.h) * b.v * dt, nz = b.pos.z + Math.cos(b.h) * b.v * dt; if (bb.isWater(nx, nz)) { b.pos.x = nx; b.pos.z = nz; } else { b.v *= .3; b.wh += 1.2; b.goal = null; } b.m.rotation.y = b.h;
+          const d = Math.hypot(pp.x - b.pos.x, pp.z - b.pos.z); b.rt -= dt;
+          if (d < 6 && b.rt <= 0 && pv && Math.abs(pv.v) + Math.abs(b.v) > 8) { b.rt = 1; if (st.mode === 'escape') { pv.hp = Math.max(5, pv.hp - 8); toastS('💥 They rammed your boat!', '#ff5d73'); } else { b.hp -= 25; toastS(`💥 Rammed · ${Math.max(0, b.hp)}%`, '#ff9f1c'); } }
+          if (st.mode === 'escape' && d < 20 && b.rt <= 0 && Math.random() < dt * .8 && cur.diff.hard) { bb.tracer && bb.tracer(b.pos.x, 1.6, b.pos.z, pp.x, 1.2, pp.z, 0xffb0a0); bb.sfxShot && bb.sfxShot(.4); bb.damage(3, 'Shot from a boat'); } }
+        if (st.mode === 'escape') { if (s.to ? reach(s.to, 25) : s.left <= 0) return next(); if (s.boats.every(b => Math.hypot(pp.x - b.pos.x, pp.z - b.pos.z) > 260)) return next(); if (pv && pv.hp <= 5 && s.left > 0) return fail('Your boat was wrecked'); }
+        else { if (s.boats.every(b => b.hp <= 0)) return next(); if (s.left <= 0) return fail(st.escText || 'They got away'); } },
+      hud: (st, s) => ({ k: fmt(Math.max(0, s.left)), t: st.text || (st.mode === 'escape' ? 'Get away from the boats' : 'Catch the boat'), m: st.mode === 'escape' ? (s.to ? 'Reach the pickup point' : 'Lose them or hold out') : 'Ram it or shoot at it', target: st.mode === 'escape' ? s.to || null : (s.boats.find(b => b.hp > 0) ? { x: s.boats.find(b => b.hp > 0).pos.x, z: s.boats.find(b => b.hp > 0).pos.z, col: 0xff5d73 } : null) }) },
+    tail: { start: (st, s) => { const a = at(st.from), b = at(st.to); s.r = route(a, b); const v = npcVeh(st.veh || 'van', a.x, a.z, along(s.r, 0).h); v.v = 0; v.s = 0; s.v = v; s.lost = 0; s.close = 0; s.fin = b; },
+      update: (st, s, dt) => { const v = s.v, pp = bb.ppos(); const d = Math.hypot(pp.x - v.pos.x, pp.z - v.pos.z); const tgt = (st.speed || 11) * (d > (st.max || 70) * .8 ? .55 : 1); v.v += Math.sign(tgt - v.v) * Math.min(Math.abs(tgt - v.v), 6 * dt); driveAlong(v, s.r, dt);
+        if (d > (st.max || 70)) s.lost += dt; else s.lost = Math.max(0, s.lost - dt); if (d < (st.min || 10)) s.close += dt; else s.close = Math.max(0, s.close - dt * .5);
+        if (s.lost > (st.loseAfter || 12)) return fail('You lost them'); if (s.close > 6) return fail('They spotted you'); if ((v.s || 0) >= s.r.L - 3) { toastS(`📍 They stopped at ${s.fin.name}`, '#3ddc97'); return next(); } },
+      end: (st, s) => { if (s.v) { bb.removeVeh(s.v); const i = NV.indexOf(s.v); if (i >= 0) NV.splice(i, 1); } },
+      hud: (st, s) => ({ k: s.close > 2 ? 'too close!' : s.lost > 3 ? 'losing them' : 'tailing', t: st.text || 'Follow without being seen', m: `Stay between ${Math.round((st.min || 10) * 2.4)} and ${Math.round((st.max || 70) * 2.4)} m behind`, target: { x: s.v.pos.x, z: s.v.pos.z, col: 0x5fb4ff } }) },
+    convoy: { start: (st, s) => { const a = at(st.from), b = at(st.to); s.r = route(a, b); s.vs = []; const n = st.n || 3; for (let k = 0; k < n; k++) { const v = npcVeh(st.veh || 'truck', a.x, a.z, 0); v.v = 0; v.s = Math.max(0, (n - k) * 16); v.hp = 100; v.target = true; v.rt = 0; s.vs.push(v); } s.need = st.need || n; },
+      update: (st, s, dt) => { const pp = bb.ppos(); let stopped = 0;
+        for (const v of s.vs) { if (v.hp <= 0) { stopped++; continue; } const tgt = st.speed || 12; v.v += Math.sign(tgt - v.v) * Math.min(Math.abs(tgt - v.v), 5 * dt); driveAlong(v, s.r, dt); v.rt -= dt; const d = Math.hypot(pp.x - v.pos.x, pp.z - v.pos.z);
+          if (pl.mode === 'drive' && pl.veh && d < v.spec.len / 2 + pl.veh.spec.len / 2 + 1 && v.rt <= 0 && Math.abs(pl.veh.v) > 6) { v.rt = 1; v.hp -= 25; pl.veh.v *= .6; toastS(`💥 ${Math.max(0, v.hp)}%`, '#ff9f1c'); }
+          if (v.hp <= 0) { v.v = 0; if (v.m.userData.driver) v.m.userData.driver.visible = false; toastS('🚛 One down', '#3ddc97'); } }
+        if (stopped >= s.need) return next(); if (s.vs.some(v => v.hp > 0 && (v.s || 0) >= s.r.L - 3) && s.vs.filter(v => v.hp > 0 && (v.s || 0) >= s.r.L - 3).length > s.vs.length - s.need) return fail(st.escText || 'The convoy got through'); },
+      hud: (st, s) => { const live = s.vs.filter(v => v.hp > 0); const f = live[0]; return { k: `${s.vs.length - live.length}/${s.need}`, t: st.text || `Stop ${s.need} of the ${s.vs.length} trucks`, m: 'Ram them or shoot at them', target: f ? { x: f.pos.x, z: f.pos.z, col: 0xff5d73 } : null }; } },
+    travel: { start: (st, s) => { const p0 = at(st.to); bb.big && bb.big(st.big || '✈ TRAVEL', '#5fb4ff'); toastS(st.text || `Travelling to ${p0.name}…`, '#5fb4ff'); setTimeout(() => { if (!cur || cur.st !== s) return; bb.teleport(p0.x, p0.z, 0); next(); }, 1600); }, hud: (st) => ({ t: st.text || 'Travelling…' }) },
+    fortress: { start: (st, s) => { buildFortress(at(st.at)); next(); } },
+    choice: { start: (st, s) => { bb.openSheet(st.title || 'Your choice', st.sub || '', st.options.map(o => bb.rowHtml('c_' + o.id, o.label, o.sub || '', 'Choose')).join(''), el => el.onclick = e => { const id = e.target.dataset.id; if (!id || !id.startsWith('c_')) return; const o = st.options.find(q => 'c_' + q.id === id); S().flags[st.flag || 'choice'] = o.id; for (const f of o.flags || []) S().flags[f] = true; bb.setDirty(); bb.closeSheet(); if (o.lines) say(o.lines, false, () => next()); else next(); }); },
+      hud: (st) => ({ t: st.title || 'Make your choice' }) },
   };
+  // Sagar Mahal: an island fortress with a lighthouse (built when the finale needs it)
+  let fort = null; function buildFortress(p) { if (fort) return; const g = new T.Group(); const stone = LM('#b9a98c'), dark = LM('#7a6a52'), white = LM('#f4f1ea'), red = LM('#c1272d');
+    for (const [x, z, w, d] of [[0, -30, 60, 3], [0, 30, 60, 3], [-30, 0, 3, 60], [30, 0, 3, 60]]) { const m = new T.Mesh(new T.BoxGeometry(w, 7, d), stone); m.position.set(x, 3.5, z); g.add(m); }
+    for (const [x, z] of [[-30, -30], [30, -30], [-30, 30], [30, 30]]) { const t = new T.Mesh(new T.CylinderGeometry(3.4, 3.8, 10, 10), dark); t.position.set(x, 5, z); g.add(t); }
+    const gate = new T.Mesh(new T.BoxGeometry(8, 6, 3.4), dark); gate.position.set(0, 3, 30); g.add(gate); const keep = new T.Mesh(new T.BoxGeometry(18, 12, 14), stone); keep.position.set(-6, 6, -10); g.add(keep);
+    const lh = new T.Mesh(new T.CylinderGeometry(2.2, 3, 24, 12), white); lh.position.set(14, 12, -14); g.add(lh); for (let k = 0; k < 3; k++) { const b = new T.Mesh(new T.CylinderGeometry(2.25 - k * .2, 2.4 - k * .2, 2, 12), red); b.position.set(14, 4 + k * 7, -14); g.add(b); }
+    const lamp = new T.Mesh(new T.SphereGeometry(1.6, 10, 8), new T.MeshBasicMaterial({ color: 0xffe08a })); lamp.position.set(14, 25.5, -14); g.add(lamp);
+    let best = { x: p.x, z: p.z - 40 }, bs = -1; for (let k = 0; k < 12; k++) { const an = k / 12 * 6.283, x = p.x + Math.sin(an) * 45, z = p.z + Math.cos(an) * 45; let land = 0; for (let r = 0; r <= 35; r += 7) for (let q = 0; q < 6; q++) { const a2 = q / 6 * 6.283; if (!bb.isWater(x + Math.sin(a2) * r, z + Math.cos(a2) * r)) land++; } if (land > bs) { bs = land; best = { x, z }; } }
+    g.position.set(best.x, 0, best.z); bb.scene.add(g); fort = g; }
   function nearestS(r, p) { let best = 0, bd = 1e12; for (let s = 0; s <= r.L; s += 10) { const q = along(r, s); const d = Math.hypot(q.x - p.x, q.z - p.z); if (d < bd) { bd = d; best = s; } } return best; }
   function roundStart(st, s) { s.round++; const c = at(st.at); if (s.boss) { bb.scene.remove(s.boss.g); NPC.splice(NPC.indexOf(s.boss), 1); } s.boss = spawn({ x: c.x + 3, z: c.z, name: st.name, boss: true, hp: st.hp || 6, weapon: 'fist', dmg: st.dmg || 6, speed: 3.2, col: '#e8573e' }); s.h0 = P().health; toastS(`🔔 Round ${s.round}`, '#ffc93c'); }
   function endRound(st, s) { if (s.won >= 2) { if (s.boss) { bb.scene.remove(s.boss.g); NPC.splice(NPC.indexOf(s.boss), 1); s.boss = null; } return next(); } if (s.lost >= 2) return fail(`${st.name} won the bout`); roundStart(st, s); }
   /* ================= the Badshah phone app ================= */
-  function app() { const s = S(); const nx = nextMission(); const act = id => id.startsWith('A1') ? 'Act 1 · Kamaai (The Hustle)' : id.startsWith('A2') ? 'Act 2 · Ilaaka (The Turf)' : 'Act 3';
+  function app() { const s = S(); const nx = nextMission(); const act = m => !m.arc ? (m.id.startsWith('A1') ? 'Act 1 · Kamaai' : 'Act 2 · Ilaaka') : m.arc === 'final' ? 'Act 4 · Raj' : m.arc === 'i' ? 'Interlude' : `Act 3 · ${KINGS[m.arc] ? KINGS[m.arc].name : ''}`;
     const doneN = Object.keys(s.done).length; const debtLeft = Math.max(0, DEBT() - (s.paid || 0)); const inAct1 = !s.done['A1-09'];
-    const rows = (cur ? bb.rowHtml('quit', `▶ ${esc(cur.m.title)} (playing)`, 'Give up this mission and try later', 'Give up', 'danger') : nx ? bb.rowHtml('go', `${esc(nx.m.id)} · ${esc(nx.m.title)}`, nx.ok ? esc(nx.m.blurb || '') + ' · go to the 👑 marker' : esc(nx.why), nx.ok ? 'Show me' : '', nx.ok ? '' : 'ghost') : bb.rowHtml('x', 'You have played every mission in this update', 'The eight kings arrive in the next updates', '', 'ghost')) +
+    const showList = MIS.filter(m => !m.arc || m.arc === 'i' || m.arc === 'final' || m.arc === s.curKing || kingDone(m.arc));
+    const rows = (cur ? bb.rowHtml('quit', `▶ ${esc(cur.m.title)} (playing)`, 'Give up this mission and try later', 'Give up', 'danger') : nx && nx.pick ? bb.rowHtml('pick', '👑 Choose the next king', `${KIDS.filter(k => !kingDone(k)).length} of the Navratna are left · each one is a new part of India`, 'Choose') : nx ? bb.rowHtml('go', `${esc(nx.m.id)} · ${esc(nx.m.title)}`, nx.ok ? esc(fill(nx.m.blurb || '')) + ' · go to the 👑 marker' : esc(nx.why), nx.ok ? 'Show me' : '', nx.ok ? '' : 'ghost') : bb.rowHtml('x', s.flags.ending ? (s.flags.ending === 'badshah' ? '👑 Badshah of India Bay' : '🏢 India Bay Tycoon') : 'You have played every mission', s.flags.ending ? 'The story is complete · start again with a new character any time (Settings → Start a new game)' : '', '', 'ghost')) +
       (inAct1 ? bb.rowHtml('debt', `💸 Vikram's debt · ${bb.inr(debtLeft)} left`, `Paid ${bb.inr(s.paid || 0)} of ${bb.inr(DEBT())} to Byaaj Bhai · pay whenever you have cash`, debtLeft ? 'Pay' : 'Cleared', debtLeft ? '' : 'ghost') : '') +
+      (KIDS.length && s.done['A2-12'] ? bb.rowHtml('kings', `📜 Ledger pages ${(s.pages || []).length} of 8`, KIDS.map(k => (kingDone(k) ? '✅ ' : k === s.curKing ? '▶ ' : '') + KINGS[k].name).join(' · '), 'Kings', 'ghost') : '') +
       bb.rowHtml('x', `Izzat ${s.izzat || 0} · ${doneN} missions done`, `Crew: ${(s.crew || []).map(c => (WHO[c] || [c])[0]).join(', ') || 'none yet'} · home city ${esc(anchors().city)}`, '', 'ghost') +
-      MIS.map(m => bb.rowHtml('m_' + m.id, `${s.done[m.id] ? '✅' : nx && nx.m === m ? '👑' : '🔒'} ${m.id} · ${esc(m.title)}`, act(m.id) + (s.done[m.id] ? ' · done ' + s.done[m.id] : ''), '', 'ghost')).join('');
+      showList.map(m => bb.rowHtml('m_' + m.id, `${s.done[m.id] ? '✅' : nx && nx.m === m ? '👑' : '🔒'} ${m.id} · ${esc(m.title)}`, act(m) + (s.done[m.id] ? ' · done ' + s.done[m.id] : ''), '', 'ghost')).join('');
     bb.openSheet('👑 Badshah', 'Story mode · up to 3 missions a day', rows, el => el.onclick = e => { const id = e.target.dataset.id; if (!id) return;
       if (id === 'go' && nx && nx.ok) { const a0 = at(nx.m.start || 'garage'); bb.closeSheet(); bb.directions && bb.directions(a0.x, a0.z, `👑 ${nx.m.title}`); }
+      if (id === 'pick' || id === 'kings') return kingsSheet(id === 'pick');
       if (id === 'quit' && cur) { const st = stepOf(); if (st && STEP[st.type] && STEP[st.type].end) STEP[st.type].end(st, cur.st); clearNPC(); clearNV(); run = false; cur = null; S().cur = null; talk = null; card.hidden = true; bb.setDirty(); bb.closeSheet(); toastS('Mission stopped · start it again from the 👑 marker', '#d6c8e4'); }
       if (id === 'debt') payDebt(); }); }
+  function kingsSheet(pick) { const s = S(); const can = pick && !s.curKing;
+    bb.openSheet('📜 The Navratna', can ? 'Choose the next king to hunt' : `${(s.pages || []).length} of 8 ledger pages`, KIDS.map(k => { const K = KINGS[k]; const done = kingDone(k); const zz = W.zones.find(q => q.id === K.city);
+        return bb.rowHtml('k_' + k, `${done ? '✅' : k === s.curKing ? '▶' : '👑'} ${esc(K.name)} · ${esc(K.region)}`, `${esc(K.racket)} · base ${esc(K.base)}${zz ? ' · starts in ' + esc(zz.name) : ''}`, done ? 'Beaten' : can ? 'Hunt' : '', done || !can ? 'ghost' : ''); }).join('') + bb.rowHtml('back', '‹ Back', '', 'Back', 'ghost'),
+      el => el.onclick = e => { const id = e.target.dataset.id; if (!id) return; if (id === 'back') return app(); if (!can || !id.startsWith('k_')) return; const k = id.slice(2); if (kingDone(k)) return; s.curKing = k; if (!s.kings.includes(k)) s.kings.push(k); bb.setDirty(); bb.save(); const m = arcMis(k)[0]; toastS(`👑 Next: ${KINGS[k].name} · ${slotOf(k) > 3 ? 'Hard' : 'Moderate'}`, '#f2c14e'); app(); }); }
+  // Beta v2.04.00: during a mission the phone shows only what the mission needs; story mode never shows the online apps
+  const ONLINE_ONLY = new Set(['invite', 'baygram', 'events', 'location', 'calls', 'messages', 'story', 'msgadmin', 'baytaxi']);
+  const MISSION_APPS = new Set(['badshah', 'map', 'underground', 'baypay', 'roadside', 'mechanic', 'garage', 'addgarage', 'traveler', 'mytickets', 'camera', 'clock', 'medicine', 'foodbag', 'wardrobe', 'plate', 'challans']);
+  bb.appFilter = a => { if ((a.group || 'phone') === 'settings') return true; if (ONLINE_ONLY.has(a.id)) return false; if (!run || !cur) return true; if (MISSION_APPS.has(a.id)) return true;
+    const st = stepOf(); if (st && st.type === 'job') return ['jobs', 'swiggy', 'zomato', 'baycart', 'localwork'].includes(a.id); if (st && (st.type === 'biz' || st.type === 'cash' || st.type === 'cashpay')) return ['business', 'jobs', 'swiggy', 'zomato', 'baycart', 'localwork', 'property'].includes(a.id); return false; };
   function payDebt() { const s = S(); const left = Math.max(0, DEBT() - (s.paid || 0)); if (!left) return; const p = P(); const opts = [5000, 20000, 50000].filter(a => a < left).concat([left]);
     bb.openSheet("💸 Pay Byaaj Bhai", `${bb.inr(left)} left · you have ${bb.inr(p.cash)} cash and ${bb.inr(p.bank)} in the bank`, opts.map(a => bb.rowHtml('p' + a, bb.inr(a), a === left ? 'Everything left' : 'Pay part of it', 'Pay')).join('') + bb.rowHtml('back', '‹ Back', '', 'Back', 'ghost'),
       el => el.onclick = e => { const id = e.target.dataset.id; if (!id) return; if (id === 'back') return app(); const a = +id.slice(1); if (!bb.spend(a, true)) return; s.paid = (s.paid || 0) + a; bb.setDirty(); bb.save(); toastS(`💸 Paid ${bb.inr(a)} · ${bb.inr(Math.max(0, DEBT() - s.paid))} left`, '#ffc93c'); payDebt(); }); }
   bb.addApp({ id: 'badshah', label: 'Badshah', icon: '👑', fn: app });
+  // after the ending: Saaf (clean) players lose wanted stars twice as fast; Badshah players get the arms dealer cheaper (hideout.js)
+  bb.onUpdate(dt => { if (S().flags.ending === 'saaf' && pl.stars > 0 && !run) pl.coolT = (pl.coolT || 0) + dt; });
+  bb.STORYPERK = () => S().flags.ending || null;
   bb.onStart(() => { const lc = document.querySelector('#top .lcol'); if (!lc || document.querySelector('#bsPill')) return; const d = document.createElement('button'); d.id = 'bsPill'; d.type = 'button'; d.className = 'pill'; d.style.cssText = 'pointer-events:auto;font:700 12px var(--f-display);color:#f2c14e;cursor:pointer;text-align:left'; d.textContent = '👑 Badshah · story mode'; d.onclick = () => app(); lc.appendChild(d); });
   /* ================= resume after a reload, and the first-time welcome ================= */
   bb.onStart(() => setTimeout(() => { const s = S(); anchors(); if (s.cur && BYID[s.cur.id]) { const m = BYID[s.cur.id]; const ck = s.cur.ck || 0; cur = { m, i: ck, st: {} }; s.cur.i = ck; run = true; toastS(`👑 Back to ${m.title}${ck ? ' (from the checkpoint)' : ''}`, '#f2c14e'); enter(); }
     else if (!Object.keys(s.done).length && !s.welcomed) { s.welcomed = true; bb.setDirty(); bb.openSheet('👑 Badshah', 'Story mode', `<p class="note" style="color:var(--ink);font-size:14.5px">You step off a night train in ${esc(anchors().city)} with ₹500, your brother Vikram's old phone, and his debt. Vikram drove trucks across India. A year ago he found something on the highway, and he never came home.</p><p class="note">Follow the 👑 marker. Missions open day by day (up to 3 a day). Between missions, take jobs, explore and earn: you will need the money.</p>` + bb.rowHtml('ok', 'Start the story', '', 'Go'), el => el.onclick = e => { if (e.target.dataset.id === 'ok') bb.closeSheet(); }); }
   }, 1500));
-  bb.BADSHAH = { tick: (dt) => { if (!run) return; const now = performance.now() / 1000; updNPC(dt, now); const st = stepOf(); if (st && STEP[st.type] && STEP[st.type].update) STEP[st.type].update(st, cur.st, dt, now); }, anchors, begin: id => begin(BYID[id]), get cur() { return cur; }, get npc() { return NPC; }, S, next: () => next(), fail, nextMission, app, complete: () => complete(), get talk() { return talk; }, nextLine };
+  bb.BADSHAH = { at: a => at(a), tick: (dt) => { if (!run) return; const now = performance.now() / 1000; updNPC(dt, now); const st = stepOf(); if (st && STEP[st.type] && STEP[st.type].update) STEP[st.type].update(st, cur.st, dt, now); }, anchors, begin: id => begin(BYID[id]), get cur() { return cur; }, get npc() { return NPC; }, S, next: () => next(), fail, nextMission, app, complete: () => complete(), get talk() { return talk; }, nextLine };
 });

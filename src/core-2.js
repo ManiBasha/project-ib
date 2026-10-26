@@ -168,7 +168,9 @@ const SPEC={
   golfcart:{max:10,acc:5,turn:1.9,len:2.5,wid:1.3,fuel:null,lic:null,fp:[-.3,1.45,0],cam:4.5,label:'Golf cart'},
   erickshaw:{max:10,acc:5,turn:1.8,len:2.9,wid:1.3,fuel:null,lic:null,fp:[0,1.75,.7],cam:4.5,label:'E-rickshaw'},
   // Beta v1.01.28: an electric car that flies (features/skycar.js draws it and flies it)
-  skycar:{max:44,acc:24,turn:1.9,len:4.6,wid:2.1,fuel:null,lic:'lmv',fp:[-.38,1.25,.1],cam:5.4,label:'Aerion flying car',flies:true}};
+  skycar:{max:44,acc:24,turn:1.9,len:4.6,wid:2.1,fuel:null,lic:'lmv',fp:[-.38,1.25,.1],cam:5.4,label:'Aerion flying car',flies:true},
+  // Beta v2.04.00: a speedboat for the story (features/boats.js draws it). It only moves on water.
+  speedboat:{max:30,acc:14,turn:1.5,len:6.2,wid:2.3,fuel:null,lic:null,fp:[0,1.5,-.6],cam:6.5,label:'Speedboat',boat:true}};
 /* ---------- realistic vehicle parts ---------- */
 // Beta v1.01.23: vehicles reflect the sky (a small cube map), so paint, glass and chrome look glossy. ENVM keeps each
 // material's day strength; core-3 dims them at night.

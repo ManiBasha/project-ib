@@ -93,8 +93,8 @@ window.BBFeatures.push(function (bb) {
         pl.stars = Math.max(0, pl.stars - 2); pl.coolT = 0; bb.renderStars(); bb.emit('stars', pl.stars); bb.closeSheet(); return notice('🔧 New plates on · −2 stars', '#3ddc97'); }
       if (id === 'dealer') return dealer(); }); }
   function dealer() { if (!bb.CFG.weapons) return; const G = (bb.GUNSHOP || []).filter(g => g[0] !== 'bat');
-    bb.openSheet('🔫 Arms dealer', 'Dropped at your feet · no questions', G.map(([id, nm, sub, pr]) => bb.rowHtml(id, nm, sub, bb.inr(Math.round(bb.cost('gun.' + id, pr) * 1.4)))).join('') + bb.rowHtml('back', '‹ Back', '', 'Back', 'ghost'),
-      s => s.onclick = e => { const id = e.target.dataset.id; if (!id) return; if (id === 'back') return app(); const g = G.find(q => q[0] === id); if (!g) return; if (!bb.spend(Math.round(bb.cost('gun.' + id, g[3]) * 1.4), true)) return;
+    bb.openSheet('🔫 Arms dealer', 'Dropped at your feet · no questions', G.map(([id, nm, sub, pr]) => bb.rowHtml(id, nm, sub, bb.inr(Math.round(bb.cost('gun.' + id, pr) * (bb.STORYPERK && bb.STORYPERK() === 'badshah' ? 1.1 : 1.4))))).join('') + bb.rowHtml('back', '‹ Back', '', 'Back', 'ghost'),
+      s => s.onclick = e => { const id = e.target.dataset.id; if (!id) return; if (id === 'back') return app(); const g = G.find(q => q[0] === id); if (!g) return; if (!bb.spend(Math.round(bb.cost('gun.' + id, g[3]) * (bb.STORYPERK && bb.STORYPERK() === 'badshah' ? 1.1 : 1.4)), true)) return;
         const AM = { ammoP: ['pistol', 24], ammoS: ['shotgun', 12], ammoM: ['smg', 60], ammoR: ['rifle', 10] }, ST = { pistol: 24, shotgun: 12, smg: 60, rifle: 10 }; const pp = bb.ppos(); let item;
         if (AM[id]) { P().ammo[AM[id][0]] = (P().ammo[AM[id][0]] || 0) + AM[id][1]; bb.updWeap(); bb.setDirty(); bb.closeSheet(); return notice(`📦 A boy on a cycle hands you a packet · +${AM[id][1]} rounds`, '#3ddc97'); }
         item = id === 'armour' ? ['armour', 100] : [id, ST[id] || 0]; if (bb.LOOT) bb.LOOT.add({ id: 'deal' + Date.now(), x: pp.x + Math.sin(pl.h) * 1.6, z: pp.z + Math.cos(pl.h) * 1.6, c: 0, i: [item] }, true); bb.closeSheet(); notice(`📦 ${g[1]} left at your feet · pick it up`, '#3ddc97'); }); }

@@ -292,7 +292,7 @@ function openPoi(poi){const T=poi.type;if(player.stars&&!['police','home'].inclu
 /* ================= phone ================= */
 function addApp(a){apps.push(a);}
 const ORDER={phone:['calls','messages','map','rewards','invite','swiggy','zomato','baycart','foodbag','sports','challans','baypay','roadside','radio','baygame','camera','baygram','story'],menu:['garage','addgarage','property','jobs','localwork','wardrobe','business'],settings:['online','look','steer','clock','features','film','ach','admin']};
-function appGrid(group,skip){const smart=P.phone==='smart';const list=apps.filter(a=>(a.group||'phone')===group&&(!a.admin||adminOK)&&(!a.show||a.show())&&!(skip&&skip.includes(a.id))).sort((a,b)=>(ORDER[group].indexOf(a.id)+99)%99-(ORDER[group].indexOf(b.id)+99)%99);
+function appGrid(group,skip){const smart=P.phone==='smart';const list=apps.filter(a=>(a.group||'phone')===group&&(!a.admin||adminOK)&&(!a.show||a.show())&&!(skip&&skip.includes(a.id))&&(!api.appFilter||api.appFilter(a))).sort((a,b)=>(ORDER[group].indexOf(a.id)+99)%99-(ORDER[group].indexOf(b.id)+99)%99);
   return `<div class="apps">${list.map(a=>`<button class="app${a.smart&&!smart?' locked':''}" data-app="${a.id}" style="--h:${appHue(a.id)}"><span>${esc(a.icon||'•')}</span>${esc(a.label)}</button>`).join('')}</div>`;}
 function appClick(e){const b=e.target.closest('[data-app]');if(!b)return false;const a=apps.find(x=>x.id===b.dataset.app);if(a.smart&&P.phone!=='smart'){toast('Needs a smartphone · Mobile Point sells them','#ff9f1c');return true;}a.fn(api);return true;}
 // The phone (Beta v1.01.11): a home screen of apps and folders on swipeable pages, with a dock that never moves.
@@ -718,13 +718,13 @@ function engTick(v,sp,off,dt){if(!eng)return;const kind=ENGOF[v.type]||(sp.two?'
     D.g.gain.value+=(want-D.g.gain.value)*Math.min(1,dt*10);D.sq.frequency.value=1000+sv*12;if(on>.3&&Math.random()<dt*14&&!sp.two)for(const sx of [-1,1])puff(v.pos.x-fx*sp.len*.4+fz*sx*sp.wid*.45,.3,v.pos.z-fz*sp.len*.4-fx*sx*sp.wid*.45);}}
 function updDrive(dt,now){const v=player.veh,sp=v.spec;const dead=v.hp<=0,dry=sp.fuel&&v.fuel<=0;const acc=dead||dry?0:sp.acc;
   if(keys.up&&acc)v.v+=(v.v<0?30:acc)*dt;if(keys.down)v.v-=(v.v>.5?32:acc?10:0)*dt;if(!keys.up&&!keys.down||(!acc&&v.v>0)){v.v-=Math.sign(v.v)*Math.min(Math.abs(v.v),(acc?5:3)*dt);}
-  const road=roadAt(v.pos.x,v.pos.z,.5);const paved=!road&&zoneAt(v.pos.x,v.pos.z);let maxv=playerMax(v.type,sp)*(wx.rain>.3?.92:1)*(road?1:paved?.7:sp.two?.5:.58);for(const f of speedMods){try{maxv*=f(v);}catch(e){}}
+  const road=roadAt(v.pos.x,v.pos.z,.5);const paved=!road&&zoneAt(v.pos.x,v.pos.z);let maxv=playerMax(v.type,sp)*(wx.rain>.3?.92:1)*(sp.boat?1:road?1:paved?.7:sp.two?.5:.58);for(const f of speedMods){try{maxv*=f(v);}catch(e){}}
   if(sp.pedal&&P.energy<10)maxv*=.5;v.v=clamp(v.v,sp.two?-2:-8,maxv);
   const st=steerIn!=null?steerIn:(keys.left?1:0)-(keys.right?1:0);v.steer+=(st-v.steer)*Math.min(1,dt*(steerIn!=null?12:8));v.h+=v.steer*sp.turn*clamp(Math.abs(v.v)/7,0,1)*Math.sign(v.v)*(1-.35*Math.abs(v.v)/sp.max)*(keys.hb&&!sp.pedal&&Math.abs(v.v)>6?1.45:1)*dt;
   // momentum: the vehicle's motion follows its heading with some grip, so it slides a little in fast sharp turns
   const fx=Math.sin(v.h),fz=Math.cos(v.h);const hb=keys.hb&&!sp.pedal;if(hb)v.v-=Math.sign(v.v)*Math.min(Math.abs(v.v),(sp.two?10:7)*dt);const grip=(sp.two||sp.pedal?14:sp.max>36?6:8)*(hb&&Math.abs(v.v)>6?(sp.two?.35:.18):1);if(v.vx==null){v.vx=fx*v.v;v.vz=fz*v.v;}const gk=Math.min(1,dt*grip*(1+(Math.abs(v.v)<6?3:0)));v.vx+=(fx*v.v-v.vx)*gk;v.vz+=(fz*v.v-v.vz)*gk;
   const nx=v.pos.x+v.vx*dt,nz=v.pos.z+v.vz*dt;
-  let crash=0;if(drivable(nx+fx*sp.len/2,nz+fz*sp.len/2)&&drivable(nx,nz)){v.pos.x=nx;v.pos.z=nz;}else{crash=Math.abs(v.v);v.v*=-.2;v.vx=fx*v.v;v.vz=fz*v.v;}
+  const okAt=sp.boat?(x,z)=>isWater(x,z)&&!isForeign(x,z)&&x>2&&z>Z0+2&&x<W.W-2&&z<W.H-2:drivable;let crash=0;if(okAt(nx+fx*sp.len/2,nz+fz*sp.len/2)&&okAt(nx,nz)){v.pos.x=nx;v.pos.z=nz;}else{crash=Math.abs(v.v);v.v*=-.2;v.vx=fx*v.v;v.vz=fz*v.v;}
   const accN=(v.v-(v.pv||0))/Math.max(dt,1e-3);v.pv=v.v;v.pitchT=clamp(-accN*.0045,-.07,.07)*(sp.two?.5:1);v.pitch=(v.pitch||0)+((v.pitchT)-(v.pitch||0))*Math.min(1,dt*7);v.bump=Math.max(0,(v.bump||0)-dt*2.5);
   const rough=!road&&!paved&&Math.abs(v.v)>3?Math.sin(now*23+v.pos.x)*.012*Math.min(1,Math.abs(v.v)/12):0;
   flyUpd(v);const hit=v.pos.y>1.5?null:collide(v.pos,Math.min(1.6,sp.wid/2+.2),false);if(hit){crash=Math.max(crash,Math.abs(v.v));v.v*=Math.abs(v.v)>3?-.3:.5;}
@@ -1001,7 +1001,7 @@ $('#go').onclick=()=>{if(!P.name)return profileSheet(true,begin);begin();};
 // Beta v2.03.00: switch between the open world (online) and Badshah story mode. Each has its own save; the page reloads.
 {const b=$('#iMode');if(b){b.innerHTML=STORY?'<span>🌐</span>Open world · online':'<span>👑</span>Badshah · story mode';
   b.onclick=()=>openSheet(STORY?'🌐 Open world':'👑 Badshah · story mode',STORY?'Back to the shared online world':'104 missions · from a broke new arrival to the ruler of India Bay',
-    (STORY?'<p class="note">Your story progress is kept. Open world play uses your normal save, with other players online.</p>':'<p class="note">Story mode is played alone: no other players, no chat, no flying car or heroes. It has its own save, so your open world progress is safe. Story missions unlock day by day (up to 3 a day).</p>')+rowHtml('go',STORY?'Switch to the open world':'Play the story','The game reloads',STORY?'Open world':'Play story')+rowHtml('no','Stay here','','Cancel','ghost'),
+    (STORY?'<p class="note">Your story progress is kept. Open world play uses your normal save, with other players online.</p>':'<p class="note">Story mode is played alone: no other players, no chat, no flying car or heroes. It has its own save, so your open world progress is safe. Sign in (Google) to keep the story in the cloud and carry on from another device; it plays offline too, on a plane or with no signal, and saves to the cloud when you are back online. Story missions unlock day by day (up to 3 a day).</p>')+rowHtml('go',STORY?'Switch to the open world':'Play the story','The game reloads',STORY?'Open world':'Play story')+rowHtml('no','Stay here','','Cancel','ghost'),
     s=>s.onclick=e=>{const id=e.target.dataset.id;if(id==='go')api.setMode(STORY?'world':'story');else if(id==='no')closeSheet();});}
   if(STORY){const t=$('#gTag');if(t)t.textContent='👑 Badshah · story mode · offline';document.body.classList.add('storymode');}}
 

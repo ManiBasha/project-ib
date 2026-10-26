@@ -1,13 +1,13 @@
 // Online play: Supabase sign-in (Google or guest), unique usernames, cloud saves, shared admin settings,
 // and the live West region on the Cloudflare server (other players, proximity chat, mute and report).
 // Does nothing until js/online-config.js is filled in.
-window.__ibOnlineV = '2.03.00';
+window.__ibOnlineV = '2.04.00';
 window.BBFeatures.push(function (bb) {
   window.__ibOnlineStage = 'started';
-  // Beta v2.03.00: Badshah story mode is strictly single player: no server, no chat, no cloud save (the story has its own save)
-  if (window.IB_STORY) { const no = () => false, none = () => Promise.resolve({ error: { message: 'Story mode is offline' }, data: null });
-    bb.ONLINE = { story: true, report: no, chatR: 0, client: null, uid: null, username: '', signOut: no, status: 'story', remotes: new Map(), profile: null, myId: null, connect: no, disconnect: no, bubble: no, send: no, silencedUntil: 0, silenceNote: () => '', banned: false, isMuted: no, openChat: () => bb.toast('Chat is off in story mode', '#d6c8e4'), rpc: none, signedIn: false, isTester: false, isAdmin: false, guest: false };
-    window.__ibOnlineStage = 'story'; return; }
+  // Beta v2.04.00: Badshah story mode signs in (Google or guest) and keeps its own cloud save (table story_saves) so a
+  // story can continue on another device. It never joins the live server: no other players, chat, voice or calls.
+  // It plays offline too, and uploads the save whenever it is connected.
+  const STORY = !!window.IB_STORY, SAVES = STORY ? 'story_saves' : 'saves', LKEY = STORY ? 'ib.save.story' : 'ib.save.v3';
   const C = window.ONLINE || {};
   if (!C.supabaseUrl || !C.supabaseKey) {   // this copy has no online settings (for example the Claude preview): say so instead of showing nothing
     const lc = document.querySelector('#top .lcol'); if (lc) { const c = document.createElement('button'); c.id = 'chat'; c.className = 'pill'; c.type = 'button'; c.hidden = true; c.innerHTML = '<i class="dot"></i><b>Offline</b> <small>online play is on indiabaygame.com</small>'; lc.appendChild(c);
@@ -100,7 +100,7 @@ window.BBFeatures.push(function (bb) {
       loadConfig(); setInterval(loadConfig, 60 * 1000);
       if (session) await afterSignIn();
       if (sessionStorage.getItem('ib.cloudLoaded')) { sessionStorage.removeItem('ib.cloudLoaded'); setTimeout(() => bb.toast('☁ Loaded your cloud save', '#3ddc97'), 600); }
-      if (session && !isAnon() && !bb.hadSave) sb.from('saves').select('user_id').eq('user_id', session.user.id).maybeSingle().then(r => { bb.cloudHas = !!(r && r.data); renderIntro(); }, () => {});
+      if (session && !isAnon() && !bb.hadSave) sb.from(SAVES).select('user_id').eq('user_id', session.user.id).maybeSingle().then(r => { bb.cloudHas = !!(r && r.data); renderIntro(); }, () => {});
       renderIntro(); serverStatus(); window.__ibOnlineStage = 'ready' + (session ? (isAnon() ? ' · guest' : ' · google') : ' · not signed in');
       return true;
     } catch (e) { console.warn('Online unavailable', e); window.__ibOnlineStage = 'failed: ' + (e && e.message || e); noteErr('Could not start online: ' + (e && e.message || e)); status = 'error'; renderIntro(); return false; }
@@ -222,12 +222,12 @@ window.BBFeatures.push(function (bb) {
     const uid = session.user.id, P = bb.P;
     if (bb.testMode) { claim(); return false; }   // test play never touches the cloud save
     if (sessionStorage.getItem('ib.reset')) { sessionStorage.removeItem('ib.reset'); claim(); upload(true); return false; }
-    const { data, error } = await sb.from('saves').select('data').eq('user_id', uid).maybeSingle();
+    const { data, error } = await sb.from(SAVES).select('data').eq('user_id', uid).maybeSingle();
     if (error) { bb.toast('Could not reach your cloud save · using this device', '#ffc93c'); claim(); return false; }
     const cloud = data && data.data; const mine = P.extra && P.extra.uid === uid;
     if (cloud && (!mine || (cloud.savedAt || 0) > (P.savedAt || 0))) {
       cloud.extra = cloud.extra || {}; cloud.extra.uid = uid; cloud.name = profile.username;
-      localStorage.setItem('ib.save.v3', JSON.stringify(cloud)); sessionStorage.setItem('ib.cloudLoaded', '1'); location.reload(); return true;
+      localStorage.setItem(LKEY, JSON.stringify(cloud)); sessionStorage.setItem('ib.cloudLoaded', '1'); location.reload(); return true;
     }
     claim(); return false;
   }
@@ -237,7 +237,7 @@ window.BBFeatures.push(function (bb) {
     if (!force && Date.now() - upAt < 20000) { upLater = true; return; }
     if (upBusy) { upLater = true; return; }
     upBusy = true; upLater = false; upAt = Date.now();
-    try { const { error } = await sb.from('saves').upsert({ user_id: session.user.id, data: bb.P, updated_at: new Date().toISOString() }); if (error) { console.warn(error); upLater = true; } } catch (e) { upLater = true; }
+    try { const { error } = await sb.from(SAVES).upsert({ user_id: session.user.id, data: bb.P, updated_at: new Date().toISOString() }); if (error) { console.warn(error); upLater = true; } } catch (e) { upLater = true; }
     upBusy = false;
   }
   bb.on('save', () => upload(false));
@@ -248,6 +248,7 @@ window.BBFeatures.push(function (bb) {
   /* ---------- server connection ---------- */
   function wsUrl() { return String(C.serverUrl).replace(/^http/, 'ws').replace(/\/$/, '') + '/ws?region=' + REGION + '&token=' + encodeURIComponent(session.access_token); }
   function connect() {
+    if (STORY) { status = session && profile ? 'story' : 'off'; renderChip(); return; }
     if (!C.serverUrl || !session || !profile || ws || offline) return;
     kicked = false; idleOff = false; status = 'connecting'; renderChip();
     try { ws = new WebSocket(wsUrl()); } catch (e) { ws = null; return later(); }
@@ -462,7 +463,7 @@ window.BBFeatures.push(function (bb) {
     if (self) { freeSprite(selfBub); selfBub = tag(short, true); selfBub.position.y = (bb.player.mode === 'drive' ? 3.4 : 2.9); selfG.add(selfBub); selfBubT = performance.now() + 7000; }
     else { const r = remotes.get(d.id); if (r) { freeSprite(r.bub); r.bub = tag(short, true); r.bub.position.y = r.tagY + 1.1; r.g.add(r.bub); r.bubT = performance.now() + 7000; } }
   }
-  function openBar() { if (silencedUntil > Date.now()) return bb.toast(silenceNote(silencedUntil), '#ff8b8b'); if (bb.CFG.chatOn === false) return bb.toast('💬 ' + bb.esc(bb.CFG.chatNote || 'Chat is paused by the admin right now'), '#ffc93c'); if (status !== 'on') { if (lastErr || !session) return onlineSheet(); offline = false; if (!session || !profile) { next = connect; return flow(); } return connect(); } bar.hidden = false; inp.value = ''; inp.focus(); }
+  function openBar() { if (STORY) return bb.toast('Chat is off in story mode', '#d6c8e4'); if (silencedUntil > Date.now()) return bb.toast(silenceNote(silencedUntil), '#ff8b8b'); if (bb.CFG.chatOn === false) return bb.toast('💬 ' + bb.esc(bb.CFG.chatNote || 'Chat is paused by the admin right now'), '#ffc93c'); if (status !== 'on') { if (lastErr || !session) return onlineSheet(); offline = false; if (!session || !profile) { next = connect; return flow(); } return connect(); } bar.hidden = false; inp.value = ''; inp.focus(); }
   function closeBar() { bar.hidden = true; inp.blur(); }
   bar.onsubmit = e => { e.preventDefault(); const t = inp.value.trim(); if (t && ws && ws.readyState === 1) { ws.send(JSON.stringify({ t: 'chat', text: t.slice(0, 120), r: chatR })); U.add('chat'); U.add('ws_out'); } closeBar(); };
   bar.querySelector('[data-x]').onclick = closeBar;
@@ -479,6 +480,7 @@ window.BBFeatures.push(function (bb) {
       sh => sh.onclick = e => { const id = e.target.dataset.id; if (id === 'i_acct' && (!session || isAnon())) { bb.closeSheet(); return googleIn(); } if (id === 'i_srv' && status !== 'on') { bb.closeSheet(); lastErr = ''; offline = false; kicked = false; if (!session || !profile) { next = connect; return flow(); } connect(); } }); }
   bb.addApp({ id: 'online', label: 'Online status', icon: '🌐', group: 'settings', fn: onlineSheet });
   function renderChip() {
+    if (STORY) { chip.hidden = !bb.started; chip.innerHTML = session && profile ? `<i class="dot on"></i><b>☁ Cloud save</b> <small>story · @${bb.esc(profile.username)}</small>` : '<i class="dot"></i><b>Offline</b> <small>story · sign in to save to the cloud</small>'; chip.onclick = () => bb.toast(session && profile ? '☁ Your story is saved to the cloud whenever you are connected · continue on any device by signing in' : 'Sign in on the start screen (Google) to keep your story in the cloud', '#d6c8e4'); return; }
     chip.hidden = !bb.started;
     const pz = bb.ppos(); const zq = bb.started ? bb.zoneAt(pz.x, pz.z, 40) : null;
     chip.innerHTML = status === 'on' ? `<i class="dot on"></i><b>Online</b> <small>${cityN != null && zq ? `${cityN} in ${bb.esc(zq.name)}` : `${online} in India`} · ${remotes.size} near</small><em>💬</em>` : status === 'connecting' ? '<i class="dot wait"></i><b>Joining…</b>' : status === 'retry' ? '<i class="dot wait"></i><b>Reconnecting…</b>' : !session ? '<i class="dot"></i><b>Offline</b> <small>Not signed in · tap</small>' : offline ? '<i class="dot"></i><b>Offline</b> <small>tap to go online</small>' : '<i class="dot"></i><b>Offline</b> <small>tap to rejoin</small>';
