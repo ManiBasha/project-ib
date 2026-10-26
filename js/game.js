@@ -6,7 +6,7 @@ const W=window.WORLD,LM=window.LANDMARKS;
 // Beta v2.00.00: the map reaches north of the old top edge (Delhi, Punjab, the Himalaya), so z can be negative down to W.Z0
 const Z0=W.Z0||0;
 try{await Promise.race([document.fonts.load('800 48px "Baloo 2"'),new Promise(r=>setTimeout(r,1500))]);}catch(e){}
-const VERSION='Beta v2.02.00';
+const VERSION='Beta v2.03.00';
 
 /* ================= storage + config ================= */
 const store={get(k){try{return JSON.parse(localStorage.getItem(k));}catch(e){return null;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}};
@@ -80,7 +80,7 @@ const hwTex=canvasTex(256,512,x=>{asphalt(x,256,512,'#36373c');x.fillStyle='#ece
 const zebraTex=canvasTex(128,64,x=>{x.clearRect(0,0,128,64);x.fillStyle='rgba(238,234,224,.92)';for(let i=4;i<128;i+=16)x.fillRect(i,4,9,56);},false);
 const seaTex=canvasTex(128,128,x=>{x.fillStyle='#fff';x.fillRect(0,0,128,128);for(let i=0;i<70;i++){x.fillStyle='rgba(120,170,210,.35)';x.fillRect(rnd()*128,rnd()*128,R(6,22),1);}});
 const LMat=(c,o={})=>new THREE.MeshLambertMaterial(Object.assign({color:c},o));
-const M={kerb:LMat('#b9b2a2'),zebra:new THREE.MeshLambertMaterial({map:zebraTex,transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2}),ground:LMat('#8c8676'),pave:LMat('#bdb4a4'),earth:LMat('#b8a58a'),road:LMat('#ffffff',{map:roadTex}),hw:LMat('#ffffff',{map:hwTex}),asphalt:LMat('#3a3b41'),grass:LMat('#5f9a45'),dirt:LMat('#c9a26b'),sand:LMat('#e2cf9f'),wall:LMat('#9c958a'),concrete:LMat('#aaa59b'),
+const M={kerb:LMat('#b9b2a2'),zebra:new THREE.MeshLambertMaterial({map:zebraTex,transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2}),ground:LMat('#8c8676'),pave:LMat('#bdb4a4'),earth:LMat('#b8a58a'),road:LMat('#ffffff',{map:roadTex,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-8}),hw:LMat('#ffffff',{map:hwTex,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-8}),asphalt:LMat('#3a3b41'),grass:LMat('#5f9a45'),dirt:LMat('#c9a26b'),sand:LMat('#e2cf9f'),wall:LMat('#9c958a'),concrete:LMat('#aaa59b'),
   trunk:LMat('#7a5a3a'),leaf:LMat('#3e8c3a'),tree:LMat('#4f8f3e'),treeDry:LMat('#7f8a3c'),treeDark:LMat('#2f6b33'),pole:LMat('#3b3a40'),tank:LMat('#202226'),stone:LMat('#d6b47c'),plaza:LMat('#cfc09e'),temple:LMat('#e2b77e'),gold:LMat('#f2c14e'),station:LMat('#a8704a'),cream:LMat('#f1e2c2'),
   awn:['#d9483b','#2f7fc1','#e8a628','#3aa66b','#9b4fb5'].map(c=>LMat(c)),boat:LMat('#e4572e'),boat2:LMat('#2e86ab'),white:LMat('#f3f1ec'),blue:LMat('#2d5fb3'),red:LMat('#c8102e'),kiosk:LMat('#e8a628'),wc:LMat('#3b82c4'),lamp:new THREE.MeshBasicMaterial({color:0x666055}),
   lampBox:new THREE.MeshBasicMaterial({color:0xfff6d8}),marble:LMat('#f4f0e6'),ballast:LMat('#7d7468'),steel:LMat('#8d939a'),wood:LMat('#6b4a32'),roofTin:LMat('#8a8f86'),dark:LMat('#24211f'),basalt:LMat('#55504a'),redstone:LMat('#b5562f'),blackstone:LMat('#3a3638'),
@@ -251,7 +251,7 @@ seaTex.repeat.set(140,180);outer.rotation.x=-Math.PI/2;outer.position.set(W.W/2,
 const edgeLand=new THREE.Mesh(new THREE.PlaneGeometry(W.W*3,W.H*3),LMat('#c7b089'));edgeLand.rotation.x=-Math.PI/2;edgeLand.position.set(W.W/2,-0.12,Z0-W.H*1.5+2);scene.add(edgeLand);
 // the land beyond the east edge of the map; Beta v1.01.30: only north of the Bay of Bengal (W.eastSeaZ), the sea stays open below it
 const eZ1=W.eastSeaZ||W.H*2.5,eZ0=Z0-W.H*1.5;const edgeE=new THREE.Mesh(new THREE.PlaneGeometry(W.W*2,eZ1-eZ0),LMat('#9fae55'));edgeE.rotation.x=-Math.PI/2;edgeE.position.set(W.W+W.W-2,-0.12,(eZ0+eZ1)/2);scene.add(edgeE);
-const waterMat=new THREE.MeshPhongMaterial({color:0x2f78a8,shininess:90,specular:0x88aacc,transparent:true,opacity:.92,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-4});
+const waterMat=new THREE.MeshPhongMaterial({color:0x2f78a8,shininess:90,specular:0x88aacc,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-4});
 for(const l of W.lakes){const g=new THREE.CircleGeometry(1,40);g.rotateX(-Math.PI/2);g.scale(l.rx,1,l.rz);g.translate(l.x,.04,l.z);addStatic(g,waterMat,false,true);}
 for(const r of W.rivers){const p=r.pts;for(let k=0;k<p.length-1;k++){const [ax,az]=p[k],[bx,bz]=p[k+1];const len=Math.hypot(bx-ax,bz-az),a=Math.atan2(bx-ax,bz-az);const g=new THREE.PlaneGeometry(r.w,len+r.w*.6);g.rotateX(-Math.PI/2);g.rotateY(a);g.translate((ax+bx)/2,.012,(az+bz)/2);addStatic(g,waterMat,false,true);}}
 for(const is of W.islands){const g=new THREE.CircleGeometry(is.r,24);g.rotateX(-Math.PI/2);g.translate(is.x,.06,is.z);addStatic(g,M.sand,false,true);}
@@ -333,6 +333,21 @@ for(const z of W.zones){const x1=z.x0+z.nx*80,z1=z.z0+z.nz*80;
   const clip=(pts,w,name)=>{let run=[];const out=[];const [a,b]=pts;const len=Math.hypot(b[0]-a[0],b[1]-a[1]);const n=Math.ceil(len/5);for(let i=0;i<=n;i++){const t=i/n,x=a[0]+(b[0]-a[0])*t,zz=a[1]+(b[1]-a[1])*t;if(isLand(x,zz)&&!inLake(x,zz)&&!seaOfCoast(x,zz))run.push([x,zz]);else{if(run.length>1)out.push(run);run=[];}}if(run.length>1)out.push(run);
     for(const r of out)addRoad([r[0],r[r.length-1]],w,'city',name);};
   for(let i=0;i<=z.nx;i++)clip([[z.x0+i*80,z.z0],[z.x0+i*80,z1]],16,z.name);for(let j=0;j<=z.nz;j++)clip([[z.x0,z.z0+j*80],[x1,z.z0+j*80]],16,z.name);}
+// Beta v2.03.00: highways stop at the edge of a town and join its street grid at a junction. Before, a highway could
+// run through the blocks at an angle, or alongside the town's outer road a few metres off it, so the roads did not line up.
+// Every highway is cut where it enters a town (its rectangle plus 9 m), and each cut end is snapped to the nearest grid
+// junction below (snapEnds). Inside the town you drive on the grid streets. Flyovers, bridges and coast roads are kept whole.
+{const HM=9;const inTown=(x,z)=>{const a=zGrid.get(Math.floor(x/ZG)*4096+Math.floor(z/ZG));if(a)for(const r of a){const q=r.z;if(x>q.x0-HM&&x<q.x0+q.nx*80+HM&&z>q.z0-HM&&z<q.z0+q.nz*80+HM)return true;}return false;};
+  const plen=P=>P.reduce((s,p,i)=>i?s+Math.hypot(p[0]-P[i-1][0],p[1]-P[i-1][1]):0,0);const out=[];
+  for(const h of W.highways){if(h.fly||h.kind==='bridge'||h.kind==='coast'){out.push(h);continue;}const P=h.pts;const runs=[];let cur=[],cutS=false,prevIn=inTown(P[0][0],P[0][1]);if(!prevIn)cur.push(P[0]);else cutS=true;let cuts=prevIn?1:0;
+    for(let i=0;i<P.length-1;i++){const a2=P[i],b=P[i+1],L=Math.hypot(b[0]-a2[0],b[1]-a2[1]),n=Math.max(1,Math.ceil(L/4));
+      for(let t=1;t<=n;t++){const x=a2[0]+(b[0]-a2[0])*t/n,z=a2[1]+(b[1]-a2[1])*t/n;const isIn=inTown(x,z);if(isIn===prevIn)continue;cuts++;
+        if(isIn){cur.push([x,z]);runs.push({pts:cur,cs:cutS,ce:true});cur=[];}else{cur=[[x,z]];cutS=true;}prevIn=isIn;}
+      if(!prevIn){const l=cur[cur.length-1];if(!l||Math.hypot(l[0]-b[0],l[1]-b[1])>1)cur.push(b);}}
+    if(cur.length)runs.push({pts:cur,cs:cutS,ce:false});
+    if(!cuts){out.push(h);continue;}
+    for(const r of runs){if(r.pts.length<2||plen(r.pts)<30)continue;out.push(Object.assign({},h,{pts:r.pts,_cut:[r.cs,r.ce]}));}}
+  W.highways=out;}
 // highway ends meet a town at a grid junction, arriving square to the edge (no long shallow overlaps with the grid)
 const onOtherHw=(h,x,z)=>W.highways.some(o=>o!==h&&!outBox(o.pts,x,z,14)&&o.pts.some((p,i)=>i<o.pts.length-1&&segD(x,z,p[0],p[1],o.pts[i+1][0],o.pts[i+1][1])<12));
 function snapEnds(h){const P=h.pts;for(const end of [0,1]){const k=end?P.length-1:0,nb=end?P.length-2:1;const [x,z]=P[k];if(h._keep&&h._keep[end])continue;let J=null,jd=60,Z=null;
@@ -341,9 +356,9 @@ function snapEnds(h){const P=h.pts;for(const end of [0,1]){const k=end?P.length-
     const ns=[];if(J[2]===0)ns.push([-1,0]);if(J[2]===Z.nx)ns.push([1,0]);if(J[3]===0)ns.push([0,-1]);if(J[3]===Z.nz)ns.push([0,1]);if(!ns.length)continue;
     let n=ns[0];for(const q of ns)if(q[0]*vx+q[1]*vz>n[0]*vx+n[1]*vz)n=q;const dot=(n[0]*vx+n[1]*vz)/vl;if(dot<=0||dot>.8)continue;   // only when it comes in at a shallow angle from outside
     const q=[J[0]+n[0]*28,J[1]+n[1]*28];if(end)P.splice(k,0,q);else P.splice(1,0,q);}}
-for(const h of W.highways){const P=h.pts;h._keep=[onOtherHw(h,P[0][0],P[0][1])||W.highways.some(o=>o!==h&&o.pts.some(p=>Math.hypot(p[0]-P[0][0],p[1]-P[0][1])<40)),onOtherHw(h,P[P.length-1][0],P[P.length-1][1])||W.highways.some(o=>o!==h&&o.pts.some(p=>Math.hypot(p[0]-P[P.length-1][0],p[1]-P[P.length-1][1])<40))];}
+for(const h of W.highways){const P=h.pts,C=h._cut||[];h._keep=[!C[0]&&(onOtherHw(h,P[0][0],P[0][1])||W.highways.some(o=>o!==h&&o.pts.some(p=>Math.hypot(p[0]-P[0][0],p[1]-P[0][1])<40))),!C[1]&&(onOtherHw(h,P[P.length-1][0],P[P.length-1][1])||W.highways.some(o=>o!==h&&o.pts.some(p=>Math.hypot(p[0]-P[P.length-1][0],p[1]-P[P.length-1][1])<40)))];}
 const hwLen=h=>h.pts.reduce((s,p,i)=>i?s+Math.hypot(p[0]-h.pts[i-1][0],p[1]-h.pts[i-1][1]):0,0);
-for(const h of W.highways)if(!h.fly&&h.kind!=='coast'&&h.kind!=='bridge'&&hwLen(h)>150)snapEnds(h);
+for(const h of W.highways)if(!h.fly&&h.kind!=='coast'&&h.kind!=='bridge'&&(hwLen(h)>150||h._cut))snapEnds(h);
 for(const h of W.highways){const w=h.w||(h.kind==='exp'?16:h.kind==='bridge'?14:14);const r=addRoad(h.pts,w,h.kind==='bridge'?'bridge':h.kind==='coast'?'coast':'hw',h.name);
   if(h.fly){r.fly=true;let s=0;for(const e of r.edges){e.s0=s;s+=e.len;e.fly=r;}r.len=s;}}
 /* Flyovers (v4.2): a highway marked fly rises on ramps to FLYH and runs above the roads and town below. */
@@ -1188,7 +1203,9 @@ function newSave(){return{v:3,name:'',age18:false,cash:CFG.startCash,bank:0,heal
   outfit:{top:'shirt',topCol:'#e8573e',botCol:'#2d3142',shoes:'chappal',glasses:false,cap:false},look:null,wardrobe:['shirt'],furniture:{},phone:'smart',challans:[],
   ratings:{},jobs:{},discovered:{},ach:{},daily:{last:'',streak:0},story:{step:0,done:false},biz:[],rent:{},seenVersion:'',robbedAt:-99,stats:{km:0,lions:0,trips:0,earned:0,fines:0},extra:{}};}
 // Test play (testers and admins): a separate save, so real progress is never touched. Switched in Profile.
-const TESTMODE=store.get('ib.testmode')===true,SAVEKEY=TESTMODE?'ib.save.test':'ib.save.v3';
+// Beta v2.03.00: Badshah story mode has its own save and is played offline (no online, no gimmick vehicles)
+const STORY=store.get('ib.mode')==='story';window.IB_STORY=STORY;
+const TESTMODE=store.get('ib.testmode')===true,SAVEKEY=TESTMODE?(STORY?'ib.save.storytest':'ib.save.test'):STORY?'ib.save.story':'ib.save.v3';
 let P=store.get(SAVEKEY);const hadSave=!!P;
 if(!P){const old=store.get('bb.save.v2');P=newSave();if(old){P.cash=old.cash||P.cash;P.bank=old.bank||0;P.weapons=old.weapons||P.weapons;P.ammo=Object.assign(P.ammo,old.ammo||{});P.homes=(old.homes||[]).filter(h=>W.homes.some(x=>x.id===h));
   P.cars=(old.cars||['auto']).map(t=>({type:SPEC[t]?t:'auto',fuel:80,hp:100,puc:0,ins:0}));P.trips=old.trips||0;}}
@@ -1392,7 +1409,7 @@ function updPlanes(dt){const pp=ppos();for(const ap of airportPlanes){const a=ap
 
 /* ================= police + wanted ================= */
 const AGGR={off:0,easy:.6,normal:1,hard:1.5};
-function addWanted(n,why){if(CFG.police==='off'||inside)return;const before=player.stars;player.stars=Math.min(5,player.stars+n);player.coolT=0;if(player.stars>before){toast(`${why} · police alerted`,'#ff5d73');emit('stars',player.stars);}renderStars();}
+function addWanted(n,why){if(CFG.police==="off"||inside||afk)return;const before=player.stars;player.stars=Math.min(5,player.stars+n);player.coolT=0;if(player.stars>before){toast(`${why} · police alerted`,'#ff5d73');emit('stars',player.stars);}renderStars();}
 function renderStars(){const el=$('#stars');let h='';for(let i=0;i<5;i++){const on=i<player.stars;h+=`<svg viewBox="0 0 24 24" class="${on?'on':''}"><path d="M12 2.5l2.8 6 6.5.7-4.9 4.4 1.4 6.4L12 16.7 6.2 20l1.4-6.4L2.7 9.2l6.5-.7z" fill="${on?'#ffc93c':'rgba(255,255,255,.18)'}" stroke="${on?'#7a4a00':'none'}" stroke-width="1"/></svg>`;}el.innerHTML=player.stars?h:'';}
 let policeSpawnT=0;
 function spawnPolice(){const pp=ppos();const l=randomLaneNear(pp.x,pp.z,110,170);if(!l)return;lanePos(l,_lp);const v=makeVeh('police',_lp.x,_lp.z,Math.atan2(pp.x-_lp.x,pp.z-_lp.z),'police');v.ai={stuck:0,shootT:2};v.hp=100;}
@@ -1471,9 +1488,16 @@ function fareMultAt(x,z){let m=CFG.fareMul;const st=stateAt(x,z);for(const f of 
 
 /* ================= needs + damage ================= */
 let warned={};let sleeping=false;
-let godMode=false;function damage(n,why){if(inside||godMode)return;if(P.armour>0&&!/drown|fall|hunger|jump/i.test(why||'')){const a=Math.min(P.armour,n*.6);P.armour=Math.max(0,P.armour-a*1.2);n-=a;updWeap();}P.health=Math.max(0,P.health-n);if(P.health<=0)knockedOut(why);}
+let godMode=false;function damage(n,why){if(inside||godMode||afk)return;if(P.armour>0&&!/drown|fall|hunger|jump/i.test(why||'')){const a=Math.min(P.armour,n*.6);P.armour=Math.max(0,P.armour-a*1.2);n-=a;updWeap();}P.health=Math.max(0,P.health-n);if(P.health<=0)knockedOut(why);}
 speedMods.push(()=>P.health<25?.6:1); // badly hurt: vehicles go slower too
-function updNeeds(dt){const gm=dt*CFG.timeSpeed;P.bladder=100;if(!CFG.needs){P.hunger=P.energy=100;}else{const s=sleeping?.5:1;P.hunger-=100/(CFG.foodHrs*60)*gm*s;if(!sleeping)P.energy-=100/(CFG.awakeHrs*60)*gm*(player.run&&player.mode==='foot'?1.6:1)*(player.veh&&player.veh.spec.pedal&&!player.veh.spec.animal&&Math.abs(player.veh.v)>1?1.8:1);}
+// Beta v2.03.00: a play-time clock. Rent, offers and anything that runs out by Bay days count only the time you are playing.
+// Beta v2.03.00: away from the keyboard. After 2 minutes with no key, click or touch you are "away": your meters stop,
+// nothing can hurt, rob, arrest or fine you, and play days stop counting, until you touch the game again.
+let lastInput=performance.now(),afk=false;const afkEl=document.createElement('div');afkEl.id='afk';afkEl.hidden=true;afkEl.textContent='💤 Away · your character is safe and the meters are paused · touch any key to carry on';afkEl.style.cssText='position:fixed;left:50%;top:40%;transform:translateX(-50%);z-index:80;padding:10px 18px;border-radius:14px;background:rgba(18,22,30,.9);color:#f4f1ea;font:600 14px system-ui,sans-serif;text-align:center;max-width:86vw';document.body.appendChild(afkEl);
+for(const ev of ['keydown','pointerdown','touchstart','wheel','mousemove'])addEventListener(ev,()=>{lastInput=performance.now();if(afk){afk=false;afkEl.hidden=true;emit('afk',false);}},{capture:true,passive:true});
+function checkAfk(){if(!afk&&started&&performance.now()-lastInput>120000&&!(api.CINE&&api.CINE.on)){afk=true;afkEl.hidden=false;emit('afk',true);}return afk;}
+function playDay(){return Math.floor(((P.extra&&P.extra.playMin)||0)/1440);}
+function updNeeds(dt){if(checkAfk())return;const gm=dt*CFG.timeSpeed;P.extra.playMin=(P.extra.playMin||0)+Math.min(gm,5);P.bladder=100;if(!CFG.needs){P.hunger=P.energy=100;}else{const s=sleeping?.5:1;P.hunger-=100/(CFG.foodHrs*60)*gm*s;if(!sleeping)P.energy-=100/(CFG.awakeHrs*60)*gm*(player.run&&player.mode==='foot'?1.6:1)*(player.veh&&player.veh.spec.pedal&&!player.veh.spec.animal&&Math.abs(player.veh.v)>1?1.8:1);}
   P.hunger=clamp(P.hunger,0,100);P.energy=clamp(P.energy,0,100);
   // Empty needs wear health down slowly, but never knock you out: eat, sleep or see a doctor to get it back.
   if(!inside&&!waitOpen()&&CFG.needs){const drain=(P.hunger<=0?.12:0)+(P.energy<=0?.06:0);if(drain&&P.health>10)P.health=Math.max(10,P.health-drain*dt);}
@@ -1499,9 +1523,9 @@ function teleport(x,z,h,opts={}){if(inside)leaveHome(true);if(player.mode==='dri
 function respawnAt(x,z,h){teleport(x,z,h);player.stars=0;player.arrestT=0;renderStars();for(const v of vehicles.slice())if(v.state==='police')removeVeh(v);}
 function nearestPoi(type,x,z){let b=null,bd=1e9;for(const p of pois)if(p.type===type){const d=Math.hypot(p.x-x,p.z-z);if(d<bd){bd=d;b=p;}}return b;}
 function takeFee(n){const c=Math.min(P.cash,n);P.cash-=c;const b=Math.min(P.bank,n-c);P.bank-=b;dirty=true;return c+b;}
-function knockedOut(why){if(overT>0)return;overT=3;big('KNOCKED OUT','#ff5d73');const fee=takeFee(cost('svc.ko',1000));emit('ko');
+function knockedOut(why){if(overT>0||afk)return;overT=3;big('KNOCKED OUT','#ff5d73');const fee=takeFee(cost('svc.ko',1000));emit('ko');
   setTimeout(()=>{const h=nearestPoi('hospital',ppos().x,ppos().z);respawnAt(h.x+Math.sin(h.rot)*2,h.z+Math.cos(h.rot)*2,h.rot);P.health=100;P.hunger=Math.max(P.hunger,50);P.energy=Math.max(P.energy,50);save();toast(`${h.name} · treatment ${inr(fee)}`,'#ffc93c');},1800);}
-function busted(){if(overT>0)return;overT=3;big('BUSTED','#5fb4ff');const fine=takeFee(cost('svc.bust',1500));P.weapons=P.weapons.filter(w=>WEAP[w].melee);for(const k in P.ammo)P.ammo[k]=0;if(!P.weapons.includes(P.weapon))P.weapon='fist';emit('bust');
+function busted(){if(overT>0||afk)return;overT=3;big('BUSTED','#5fb4ff');const fine=takeFee(cost('svc.bust',1500));P.weapons=P.weapons.filter(w=>WEAP[w].melee);for(const k in P.ammo)P.ammo[k]=0;if(!P.weapons.includes(P.weapon))P.weapon='fist';emit('bust');
   setTimeout(()=>{const s=nearestPoi('police',ppos().x,ppos().z);respawnAt(s.x+Math.sin(s.rot)*2,s.z+Math.cos(s.rot)*2,s.rot);updWeap();save();toast(`Released · fine ${inr(fine)}, guns taken`,'#5fb4ff');},1800);}
 function addChallan(amt,why){if(!CFG.challansOn)return;P.challans=P.challans||[];P.challans.push({amt:price(amt),why,day:istISO()});dirty=true;toast(`🚨 e-challan ${inr(price(amt))} · ${why}`,'#ff9f1c');emit('challan',{amt,why});} // traffic fines: only when the admin turns challans on
 
@@ -1691,7 +1715,7 @@ function gunSheet(poi){if(!CFG.weapons){toast('Weapons are switched off in this 
     if(GUNAMMO[id]){const [k,n]=GUNAMMO[id];P.ammo[k]=(P.ammo[k]||0)+n;}else if(id==='armour')P.armour=100;else{P.weapons.push(id);P.weapon=id;if(GUNSTART[id])P.ammo[id]=(P.ammo[id]||0)+GUNSTART[id];}updWeap();save();emit('buy',{kind:'weapon',id});toast(`Bought ${it[1]}`,'#3ddc97');gunSheet(poi);});}
 const SHOWROOM=[['auto','Auto rickshaw','CNG · no licence needed',12000],['car','Hatchback','Petrol · LMV licence',45000],['sedan','Sedan','Petrol · for cab jobs',85000],['suv','SUV','Diesel · big and tough',120000],['sports','Sports coupe','Top speed 110 km/h',250000],['mpv','MPV','7 seats · diesel · for families and cab jobs',150000],['van','Van','The everyday people mover',55000],['pickup','Pickup','Open bed for goods',110000],['coupe','Coupe','Two doors, quick',220000],['convertible','Convertible','Roof down by the sea',320000],['limo','Limousine','Long, black and grand',900000],['camper','Camper van','Sleep anywhere · road trips',400000],['tractor','Tractor','Slow and strong · farms and villages',350000],['lorry','Lorry','Open goods truck · heavy licence',650000],['tanker','Tanker','Fuel and water · heavy licence',800000],['towtruck','Tow truck','Pull broken cars to the mechanic · heavy licence',700000],['skycar','Aerion flying car','Electric · drives, then press F to fly · car licence',2500000]];
 function buyVehicle(type,cost,near){if(!spend(cost,true))return false;P.cars.push({type,fuel:100,hp:100});const i=P.cars.length-1;const [x,z,h]=freeRoadSpot(near);spawnOwned(i,x,z,h);save();emit('buy',{kind:'vehicle',type});toast(`${SPEC[type].label} is yours · parked outside`,'#3ddc97');return true;}
-function carSheet(poi){openSheet(poi.name,`Cash ${inr(P.cash)} · bank money works too`,SHOWROOM.map(([id,nm,sub,p])=>rowHtml(id,nm,sub,inr(cost('veh.'+id,p)))).join('')+`<p class="note">Comes with a full tank.</p>`,
+function carSheet(poi){openSheet(poi.name,`Cash ${inr(P.cash)} · bank money works too`,SHOWROOM.filter(r=>!(STORY&&r[0]==='skycar')).map(([id,nm,sub,p])=>rowHtml(id,nm,sub,inr(cost('veh.'+id,p)))).join('')+`<p class="note">Comes with a full tank.</p>`,
   s=>s.onclick=e=>{const id=e.target.dataset.id;if(!id)return;const it=SHOWROOM.find(i=>i[0]===id);if(buyVehicle(id,cost('veh.'+id,it[3]),{x:poi.x,z:poi.z}))closeSheet();});}
 function realtySheet(poi){openSheet(poi.name,`Cash ${inr(P.cash)} · Bank ${inr(P.bank)}`,W.homes.filter(h=>!h.starter).map(h=>{const z=W.zones.find(q=>q.id===h.zone);return rowHtml(h.id,h.name,`${z?z.name:''} · ${({chawl:'one room',flat:'flat',bungalow:'bungalow',cottage:'cottage',pol:'old city house',haveli:'haveli',villa:'villa',tent:'tent',portuguese:'Portuguese house',hut:'hut',nalukettu:'nalukettu',houseboat:'houseboat'})[h.type]||'home'}`,P.homes.includes(h.id)?'Owned':inr(cost('home.'+h.id,h.price)),P.homes.includes(h.id)?'ghost':'');}).join('')+`<p class="note">Homes are marked H on the map once you own them. Sleep, cook, decorate, hide from police, or rent them out.</p>`,
   s=>s.onclick=e=>{const id=e.target.dataset.id;if(id)buyHome(id,()=>realtySheet(poi));});}
@@ -2427,6 +2451,12 @@ function begin(){setAvatar();document.body.classList.remove('pre');$('#intro').h
   toast(`${CFG.name} · ${areaName()}`,'#ffc93c');}
 {const v=$('#ver');if(v)v.textContent=VERSION;}
 $('#go').onclick=()=>{if(!P.name)return profileSheet(true,begin);begin();};
+// Beta v2.03.00: switch between the open world (online) and Badshah story mode. Each has its own save; the page reloads.
+{const b=$('#iMode');if(b){b.innerHTML=STORY?'<span>🌐</span>Open world · online':'<span>👑</span>Badshah · story mode';
+  b.onclick=()=>openSheet(STORY?'🌐 Open world':'👑 Badshah · story mode',STORY?'Back to the shared online world':'104 missions · from a broke new arrival to the ruler of India Bay',
+    (STORY?'<p class="note">Your story progress is kept. Open world play uses your normal save, with other players online.</p>':'<p class="note">Story mode is played alone: no other players, no chat, no flying car or heroes. It has its own save, so your open world progress is safe. Story missions unlock day by day (up to 3 a day).</p>')+rowHtml('go',STORY?'Switch to the open world':'Play the story','The game reloads',STORY?'Open world':'Play story')+rowHtml('no','Stay here','','Cancel','ghost'),
+    s=>s.onclick=e=>{const id=e.target.dataset.id;if(id==='go')api.setMode(STORY?'world':'story');else if(id==='no')closeSheet();});}
+  if(STORY){const t=$('#gTag');if(t)t.textContent='👑 Badshah · story mode · offline';document.body.classList.add('storymode');}}
 
 /* ================= feature API ================= */
 // Fewer bot cars and people when real players are around (set by online play).
@@ -2441,7 +2471,7 @@ const api={GFX,MAPZ0:Z0,isForeign,onFire:f=>fireHooks.push(f),setBotScale,get bo
   CONG,sigState,sigJunction,
   blocks,get db(){return db;},get adminOK(){return adminOK;},buildVeh,nameOk,ageFromDob:IBCONF.ageFromDob,get adSlots(){return SLOTS;},updBillboards,billboardMeshes,adSheet,pickBillboard,personErr,personFields,unameField,unameIn,sexField,sexWire,sexGet,setSex,refreshBillboards,sizeLabel,openApp,set introClick(f){hooks.introClick=f;},set starterSheet(f){hooks.starterSheet=f;},enterHome,homeById,set introLabel(f){hooks.introLabel=f;setAvatar();},cloudConfig,hubSheet,supportSheet,setAvatar,addProfileRows(f){profileRows.push(f);},set profileEdit(f){hooks.profileEdit=f;},set displayName(f){hooks.displayName=f;setAvatar();},set userEmail(f){hooks.userEmail=f;},setCfgBackend(b){cfgBackend=b;adminOK=!!(b&&b.admin);adminLocal=false;},get hadSave(){return hadSave;},
   setDirty(){dirty=true;},buildPlane,addAdSlot,setSteer(v){steerIn=v==null?null:clamp(v,-1,1);},addCol,applyLook,lookCode,decodeLook,lookSheet,LOOKS,buildAnimal,animGait,ASPEC,get strays(){return cows;},animals,MR,mpick,clamp,hash,canvasTex,EDGES,ROADS,laneRandom:randomLaneNear,lanePos,uiLock};
-api.freeRoadSpot=freeRoadSpot;api.WEAP=WEAP;api.GUNSHOP=GUNSHOP;api.updWeap=updWeap;api.renderStars=renderStars;api.gunSheet=p=>gunSheet(p);api.addResumer=addResumer;api.resumeWait=resumeWait;api.getWait=()=>wait;api.applyTheme=applyTheme;api.phoneSheet=phoneSheet;api.folderSheet=folderSheet;api.HOME=HOME;api.activeNews=activeNews;api.clList=clList;api.clLines=clLines;api.THEMES=THEMES;api.garageSheet=garageSheet;api.now=bayNow;api.addHouseAd=f=>EXTRA_ADS.push(f);api.needCity=()=>!hadSave&&!startPick;api.startName=()=>startPick?startPick.zone.name:(lastZone()||{}).name||'';api.openCityPick=()=>{const p=$('#iMapPanel');if(p)p.classList.add('open');document.body.classList.add('imap');const s=$('#spick');if(s){s.classList.remove('flash');void s.offsetWidth;s.classList.add('flash');}};api.lastZone=lastZone;api.howTo=howTo;api.whatsNew=whatsNew;api.featuresSheet=featuresSheet;window.BB=api;
+api.freeRoadSpot=freeRoadSpot;api.tracer=tracer;api.sfxShot=sfxShot;api.sfxPunch=sfxPunch;api.fleeFrom=fleeFrom;api.setMode=m=>{store.set('ib.mode',m==='story'?'story':'world');save();location.reload();};api.playDay=playDay;Object.defineProperty(api,'afk',{get:()=>afk});api.WEAP=WEAP;api.GUNSHOP=GUNSHOP;api.updWeap=updWeap;api.renderStars=renderStars;api.gunSheet=p=>gunSheet(p);api.addResumer=addResumer;api.resumeWait=resumeWait;api.getWait=()=>wait;api.applyTheme=applyTheme;api.phoneSheet=phoneSheet;api.folderSheet=folderSheet;api.HOME=HOME;api.activeNews=activeNews;api.clList=clList;api.clLines=clLines;api.THEMES=THEMES;api.garageSheet=garageSheet;api.now=bayNow;api.addHouseAd=f=>EXTRA_ADS.push(f);api.needCity=()=>!hadSave&&!startPick;api.startName=()=>startPick?startPick.zone.name:(lastZone()||{}).name||'';api.openCityPick=()=>{const p=$('#iMapPanel');if(p)p.classList.add('open');document.body.classList.add('imap');const s=$('#spick');if(s){s.classList.remove('flash');void s.offsetWidth;s.classList.add('flash');}};api.lastZone=lastZone;api.howTo=howTo;api.whatsNew=whatsNew;api.featuresSheet=featuresSheet;window.BB=api;
 const queued=Array.isArray(window.BBFeatures)?window.BBFeatures:[];window.BBFeatures={push(f){try{f(api);}catch(e){console.error('Feature failed',e);try{const at=String(e&&e.stack||'').split('\n').find(l=>/features\/|\.js/.test(l))||'';(window.__ibErrors=window.__ibErrors||[]).push('feature failed: '+(e&&e.message||e)+' '+(at.match(/[\w-]+\.js[^)\s]*/)||[''])[0]);}catch(_){}}}};queued.forEach(f=>window.BBFeatures.push(f));
 flushStatic();
 
@@ -2482,7 +2512,7 @@ function loop(ms){requestAnimationFrame(loop);
   updSky(dt);
   if(sheetOpen()||waitOpen()){tickWait(rdt);updNeeds(rdt);updHud();drawScene();for(const f of hooks.afterRender)f();return;}
   if(CFG.weather==='auto'&&wx.cur==='monsoon'&&Math.random()<.004)wx.flash=1;wx.flash=Math.max(0,wx.flash-dt*5);
-  overT=Math.max(0,overT-dt);player.fireCd=Math.max(0,player.fireCd-dt);player.hitCd=Math.max(0,player.hitCd-dt);if(fireHeld&&P.weapon==='pistol')fire();
+  overT=Math.max(0,overT-dt);player.fireCd=Math.max(0,player.fireCd-dt);player.hitCd=Math.max(0,player.hitCd-dt);if(fireHeld&&(P.weapon==='pistol'||P.weapon==='smg'))fire();
   if(inside){updFoot(dt,inter);}
   else{updTraffic(dt);updPeds(dt,now);updAnimals(dt,now);updTrains(dt);updPlanes(dt);updPolice(dt,now);
     if(overT<=0&&(!hooks.photo||hooks.photo.live)){if(player.mode==='drive'&&player.veh)updDrive(dt,now);else updFoot(dt,null);}

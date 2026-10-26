@@ -68,9 +68,16 @@ window.BBFeatures.push(function (bb) {
   function inRect(px, pz, S, St, grow) { const f = [Math.sin(S.h), Math.cos(S.h)]; const dx = px - S.x, dz = pz - S.z; const a = dx * f[0] + dz * f[1], b = dx * f[1] - dz * f[0]; return Math.abs(a) < St.len / 2 + grow && Math.abs(b) < St.wid / 2 + grow; }
   function rampY(St, z) { if (!St.ramp) return 0; const [z0, L, s] = St.ramp; return z < z0 ? 0 : z < z0 + L ? (z - z0) * s : L * s; }
 
+  // Beta v2.03.00: the test ground stands on a big grass field with a boundary wall, trees and the RTO office, so you
+  // never see the sea or the city below it (it used to look as if the track floated on water)
+  const grassM = LM('#6a9a4a'), wallM = LM('#d8cfbd'), treeM = LM('#3f7a34'), trunkM = LM('#6b4a2e'), offM = LM('#efe2c6'), roofM = LM('#a8452c');
+  function addGround(g) { const gr = new T.Mesh(new T.PlaneGeometry(9000, 9000), grassM); gr.rotation.x = -Math.PI / 2; gr.position.y = -.03; gr.receiveShadow = true; g.add(gr);
+    const R = 70; for (let k = 0; k < 4; k++) { const w = new T.Mesh(new T.BoxGeometry(2 * R, 2.2, .4), wallM); const a = k * Math.PI / 2; w.position.set(Math.sin(a) * R, 1.1, Math.cos(a) * R); w.rotation.y = a; g.add(w); }
+    for (let k = 0; k < 40; k++) { const a = k / 40 * 6.283, r = R + 8 + (k % 3) * 6; const t = new T.Mesh(new T.CylinderGeometry(.25, .3, 2.4, 6), trunkM); t.position.set(Math.sin(a) * r, 1.2, Math.cos(a) * r); g.add(t); const c = new T.Mesh(new T.SphereGeometry(2.2 + (k % 4) * .4, 8, 6), treeM); c.position.set(Math.sin(a) * r, 3.6, Math.cos(a) * r); g.add(c); }
+    const o = new T.Mesh(new T.BoxGeometry(16, 5, 8), offM); o.position.set(0, 2.5, -R + 8); g.add(o); const rf = new T.Mesh(new T.BoxGeometry(17, .5, 9), roofM); rf.position.set(0, 5.25, -R + 8); g.add(rf); }
   function runStage(lic, list, i, ctx) { const kind = list[i]; const vtype = VEH[lic]; const St = makeStage(kind, vtype); const sp = bb.SPEC[vtype];
     const two = !!sp.two; const wb = Math.max(1.1, sp.len * .62), maxSt = two ? .7 : vtype === 'truck' ? .58 : .62; const vmax = vtype === 'truck' ? 4.5 : two ? 5 : 5.5;
-    const base = bb.ppos(); St.g.position.set(ctx.ox, Y0, ctx.oz); bb.scene.add(St.g);
+    const base = bb.ppos(); St.g.position.set(ctx.ox, Y0, ctx.oz); bb.scene.add(St.g); addGround(St.g);
     const amb = new T.AmbientLight(0xffffff, .55); bb.scene.add(amb);
     const car = bb.buildVeh(vtype); St.g.add(car); if (two || vtype === 'auto') { const rider = bb.buildPerson(LM('#e8573e'), { seated: true, female: false }); const seat = sp.seat || [0, 1.0, sp.fp ? sp.fp[2] - .2 : 0];
       rider.position.set(0, (sp.seat ? seat[1] : 1.15) - .62, sp.seat ? seat[2] : .55); rider.userData.legs.forEach(l => l.rotation.x = -1.25); rider.userData.arms.forEach(a => a.rotation.x = -1.0); car.add(rider); }

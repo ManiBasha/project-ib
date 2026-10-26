@@ -3,6 +3,7 @@
 // Sightings show on billboards, in Phone → BayRadio and as a radio flash. Each hero has an admin switch
 // (Admin → Game settings → Heroes). Meet a hero for an autograph (a small reward once a day) and an achievement.
 window.BBFeatures.push(function (bb) {
+  if (window.IB_STORY) return; // Beta v2.03.00: no gimmicks in Badshah story mode
   const T = bb.THREE, W = bb.WORLD, P = () => bb.P, esc = bb.esc;
   const HEROES = [
     { id: 'vidyut', name: 'Vidyut', title: 'the Lightning Guardian', st: 'KL', icon: '⚡', suit: '#1f4fd8', acc: '#ffd23f', fx: 'bolt', line: 'Fast as monsoon lightning over the backwaters. Vidyut guards every boat and bus in Kerala.' },

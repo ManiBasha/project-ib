@@ -6,7 +6,7 @@ const W=window.WORLD,LM=window.LANDMARKS;
 // Beta v2.00.00: the map reaches north of the old top edge (Delhi, Punjab, the Himalaya), so z can be negative down to W.Z0
 const Z0=W.Z0||0;
 try{await Promise.race([document.fonts.load('800 48px "Baloo 2"'),new Promise(r=>setTimeout(r,1500))]);}catch(e){}
-const VERSION='Beta v2.02.00';
+const VERSION='Beta v2.03.00';
 
 /* ================= storage + config ================= */
 const store={get(k){try{return JSON.parse(localStorage.getItem(k));}catch(e){return null;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}};
@@ -80,7 +80,7 @@ const hwTex=canvasTex(256,512,x=>{asphalt(x,256,512,'#36373c');x.fillStyle='#ece
 const zebraTex=canvasTex(128,64,x=>{x.clearRect(0,0,128,64);x.fillStyle='rgba(238,234,224,.92)';for(let i=4;i<128;i+=16)x.fillRect(i,4,9,56);},false);
 const seaTex=canvasTex(128,128,x=>{x.fillStyle='#fff';x.fillRect(0,0,128,128);for(let i=0;i<70;i++){x.fillStyle='rgba(120,170,210,.35)';x.fillRect(rnd()*128,rnd()*128,R(6,22),1);}});
 const LMat=(c,o={})=>new THREE.MeshLambertMaterial(Object.assign({color:c},o));
-const M={kerb:LMat('#b9b2a2'),zebra:new THREE.MeshLambertMaterial({map:zebraTex,transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2}),ground:LMat('#8c8676'),pave:LMat('#bdb4a4'),earth:LMat('#b8a58a'),road:LMat('#ffffff',{map:roadTex}),hw:LMat('#ffffff',{map:hwTex}),asphalt:LMat('#3a3b41'),grass:LMat('#5f9a45'),dirt:LMat('#c9a26b'),sand:LMat('#e2cf9f'),wall:LMat('#9c958a'),concrete:LMat('#aaa59b'),
+const M={kerb:LMat('#b9b2a2'),zebra:new THREE.MeshLambertMaterial({map:zebraTex,transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2}),ground:LMat('#8c8676'),pave:LMat('#bdb4a4'),earth:LMat('#b8a58a'),road:LMat('#ffffff',{map:roadTex,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-8}),hw:LMat('#ffffff',{map:hwTex,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-8}),asphalt:LMat('#3a3b41'),grass:LMat('#5f9a45'),dirt:LMat('#c9a26b'),sand:LMat('#e2cf9f'),wall:LMat('#9c958a'),concrete:LMat('#aaa59b'),
   trunk:LMat('#7a5a3a'),leaf:LMat('#3e8c3a'),tree:LMat('#4f8f3e'),treeDry:LMat('#7f8a3c'),treeDark:LMat('#2f6b33'),pole:LMat('#3b3a40'),tank:LMat('#202226'),stone:LMat('#d6b47c'),plaza:LMat('#cfc09e'),temple:LMat('#e2b77e'),gold:LMat('#f2c14e'),station:LMat('#a8704a'),cream:LMat('#f1e2c2'),
   awn:['#d9483b','#2f7fc1','#e8a628','#3aa66b','#9b4fb5'].map(c=>LMat(c)),boat:LMat('#e4572e'),boat2:LMat('#2e86ab'),white:LMat('#f3f1ec'),blue:LMat('#2d5fb3'),red:LMat('#c8102e'),kiosk:LMat('#e8a628'),wc:LMat('#3b82c4'),lamp:new THREE.MeshBasicMaterial({color:0x666055}),
   lampBox:new THREE.MeshBasicMaterial({color:0xfff6d8}),marble:LMat('#f4f0e6'),ballast:LMat('#7d7468'),steel:LMat('#8d939a'),wood:LMat('#6b4a32'),roofTin:LMat('#8a8f86'),dark:LMat('#24211f'),basalt:LMat('#55504a'),redstone:LMat('#b5562f'),blackstone:LMat('#3a3638'),
@@ -251,7 +251,7 @@ seaTex.repeat.set(140,180);outer.rotation.x=-Math.PI/2;outer.position.set(W.W/2,
 const edgeLand=new THREE.Mesh(new THREE.PlaneGeometry(W.W*3,W.H*3),LMat('#c7b089'));edgeLand.rotation.x=-Math.PI/2;edgeLand.position.set(W.W/2,-0.12,Z0-W.H*1.5+2);scene.add(edgeLand);
 // the land beyond the east edge of the map; Beta v1.01.30: only north of the Bay of Bengal (W.eastSeaZ), the sea stays open below it
 const eZ1=W.eastSeaZ||W.H*2.5,eZ0=Z0-W.H*1.5;const edgeE=new THREE.Mesh(new THREE.PlaneGeometry(W.W*2,eZ1-eZ0),LMat('#9fae55'));edgeE.rotation.x=-Math.PI/2;edgeE.position.set(W.W+W.W-2,-0.12,(eZ0+eZ1)/2);scene.add(edgeE);
-const waterMat=new THREE.MeshPhongMaterial({color:0x2f78a8,shininess:90,specular:0x88aacc,transparent:true,opacity:.92,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-4});
+const waterMat=new THREE.MeshPhongMaterial({color:0x2f78a8,shininess:90,specular:0x88aacc,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-4});
 for(const l of W.lakes){const g=new THREE.CircleGeometry(1,40);g.rotateX(-Math.PI/2);g.scale(l.rx,1,l.rz);g.translate(l.x,.04,l.z);addStatic(g,waterMat,false,true);}
 for(const r of W.rivers){const p=r.pts;for(let k=0;k<p.length-1;k++){const [ax,az]=p[k],[bx,bz]=p[k+1];const len=Math.hypot(bx-ax,bz-az),a=Math.atan2(bx-ax,bz-az);const g=new THREE.PlaneGeometry(r.w,len+r.w*.6);g.rotateX(-Math.PI/2);g.rotateY(a);g.translate((ax+bx)/2,.012,(az+bz)/2);addStatic(g,waterMat,false,true);}}
 for(const is of W.islands){const g=new THREE.CircleGeometry(is.r,24);g.rotateX(-Math.PI/2);g.translate(is.x,.06,is.z);addStatic(g,M.sand,false,true);}
@@ -333,6 +333,21 @@ for(const z of W.zones){const x1=z.x0+z.nx*80,z1=z.z0+z.nz*80;
   const clip=(pts,w,name)=>{let run=[];const out=[];const [a,b]=pts;const len=Math.hypot(b[0]-a[0],b[1]-a[1]);const n=Math.ceil(len/5);for(let i=0;i<=n;i++){const t=i/n,x=a[0]+(b[0]-a[0])*t,zz=a[1]+(b[1]-a[1])*t;if(isLand(x,zz)&&!inLake(x,zz)&&!seaOfCoast(x,zz))run.push([x,zz]);else{if(run.length>1)out.push(run);run=[];}}if(run.length>1)out.push(run);
     for(const r of out)addRoad([r[0],r[r.length-1]],w,'city',name);};
   for(let i=0;i<=z.nx;i++)clip([[z.x0+i*80,z.z0],[z.x0+i*80,z1]],16,z.name);for(let j=0;j<=z.nz;j++)clip([[z.x0,z.z0+j*80],[x1,z.z0+j*80]],16,z.name);}
+// Beta v2.03.00: highways stop at the edge of a town and join its street grid at a junction. Before, a highway could
+// run through the blocks at an angle, or alongside the town's outer road a few metres off it, so the roads did not line up.
+// Every highway is cut where it enters a town (its rectangle plus 9 m), and each cut end is snapped to the nearest grid
+// junction below (snapEnds). Inside the town you drive on the grid streets. Flyovers, bridges and coast roads are kept whole.
+{const HM=9;const inTown=(x,z)=>{const a=zGrid.get(Math.floor(x/ZG)*4096+Math.floor(z/ZG));if(a)for(const r of a){const q=r.z;if(x>q.x0-HM&&x<q.x0+q.nx*80+HM&&z>q.z0-HM&&z<q.z0+q.nz*80+HM)return true;}return false;};
+  const plen=P=>P.reduce((s,p,i)=>i?s+Math.hypot(p[0]-P[i-1][0],p[1]-P[i-1][1]):0,0);const out=[];
+  for(const h of W.highways){if(h.fly||h.kind==='bridge'||h.kind==='coast'){out.push(h);continue;}const P=h.pts;const runs=[];let cur=[],cutS=false,prevIn=inTown(P[0][0],P[0][1]);if(!prevIn)cur.push(P[0]);else cutS=true;let cuts=prevIn?1:0;
+    for(let i=0;i<P.length-1;i++){const a2=P[i],b=P[i+1],L=Math.hypot(b[0]-a2[0],b[1]-a2[1]),n=Math.max(1,Math.ceil(L/4));
+      for(let t=1;t<=n;t++){const x=a2[0]+(b[0]-a2[0])*t/n,z=a2[1]+(b[1]-a2[1])*t/n;const isIn=inTown(x,z);if(isIn===prevIn)continue;cuts++;
+        if(isIn){cur.push([x,z]);runs.push({pts:cur,cs:cutS,ce:true});cur=[];}else{cur=[[x,z]];cutS=true;}prevIn=isIn;}
+      if(!prevIn){const l=cur[cur.length-1];if(!l||Math.hypot(l[0]-b[0],l[1]-b[1])>1)cur.push(b);}}
+    if(cur.length)runs.push({pts:cur,cs:cutS,ce:false});
+    if(!cuts){out.push(h);continue;}
+    for(const r of runs){if(r.pts.length<2||plen(r.pts)<30)continue;out.push(Object.assign({},h,{pts:r.pts,_cut:[r.cs,r.ce]}));}}
+  W.highways=out;}
 // highway ends meet a town at a grid junction, arriving square to the edge (no long shallow overlaps with the grid)
 const onOtherHw=(h,x,z)=>W.highways.some(o=>o!==h&&!outBox(o.pts,x,z,14)&&o.pts.some((p,i)=>i<o.pts.length-1&&segD(x,z,p[0],p[1],o.pts[i+1][0],o.pts[i+1][1])<12));
 function snapEnds(h){const P=h.pts;for(const end of [0,1]){const k=end?P.length-1:0,nb=end?P.length-2:1;const [x,z]=P[k];if(h._keep&&h._keep[end])continue;let J=null,jd=60,Z=null;
@@ -341,9 +356,9 @@ function snapEnds(h){const P=h.pts;for(const end of [0,1]){const k=end?P.length-
     const ns=[];if(J[2]===0)ns.push([-1,0]);if(J[2]===Z.nx)ns.push([1,0]);if(J[3]===0)ns.push([0,-1]);if(J[3]===Z.nz)ns.push([0,1]);if(!ns.length)continue;
     let n=ns[0];for(const q of ns)if(q[0]*vx+q[1]*vz>n[0]*vx+n[1]*vz)n=q;const dot=(n[0]*vx+n[1]*vz)/vl;if(dot<=0||dot>.8)continue;   // only when it comes in at a shallow angle from outside
     const q=[J[0]+n[0]*28,J[1]+n[1]*28];if(end)P.splice(k,0,q);else P.splice(1,0,q);}}
-for(const h of W.highways){const P=h.pts;h._keep=[onOtherHw(h,P[0][0],P[0][1])||W.highways.some(o=>o!==h&&o.pts.some(p=>Math.hypot(p[0]-P[0][0],p[1]-P[0][1])<40)),onOtherHw(h,P[P.length-1][0],P[P.length-1][1])||W.highways.some(o=>o!==h&&o.pts.some(p=>Math.hypot(p[0]-P[P.length-1][0],p[1]-P[P.length-1][1])<40))];}
+for(const h of W.highways){const P=h.pts,C=h._cut||[];h._keep=[!C[0]&&(onOtherHw(h,P[0][0],P[0][1])||W.highways.some(o=>o!==h&&o.pts.some(p=>Math.hypot(p[0]-P[0][0],p[1]-P[0][1])<40))),!C[1]&&(onOtherHw(h,P[P.length-1][0],P[P.length-1][1])||W.highways.some(o=>o!==h&&o.pts.some(p=>Math.hypot(p[0]-P[P.length-1][0],p[1]-P[P.length-1][1])<40)))];}
 const hwLen=h=>h.pts.reduce((s,p,i)=>i?s+Math.hypot(p[0]-h.pts[i-1][0],p[1]-h.pts[i-1][1]):0,0);
-for(const h of W.highways)if(!h.fly&&h.kind!=='coast'&&h.kind!=='bridge'&&hwLen(h)>150)snapEnds(h);
+for(const h of W.highways)if(!h.fly&&h.kind!=='coast'&&h.kind!=='bridge'&&(hwLen(h)>150||h._cut))snapEnds(h);
 for(const h of W.highways){const w=h.w||(h.kind==='exp'?16:h.kind==='bridge'?14:14);const r=addRoad(h.pts,w,h.kind==='bridge'?'bridge':h.kind==='coast'?'coast':'hw',h.name);
   if(h.fly){r.fly=true;let s=0;for(const e of r.edges){e.s0=s;s+=e.len;e.fly=r;}r.len=s;}}
 /* Flyovers (v4.2): a highway marked fly rises on ramps to FLYH and runs above the roads and town below. */

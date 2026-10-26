@@ -610,7 +610,9 @@ function newSave(){return{v:3,name:'',age18:false,cash:CFG.startCash,bank:0,heal
   outfit:{top:'shirt',topCol:'#e8573e',botCol:'#2d3142',shoes:'chappal',glasses:false,cap:false},look:null,wardrobe:['shirt'],furniture:{},phone:'smart',challans:[],
   ratings:{},jobs:{},discovered:{},ach:{},daily:{last:'',streak:0},story:{step:0,done:false},biz:[],rent:{},seenVersion:'',robbedAt:-99,stats:{km:0,lions:0,trips:0,earned:0,fines:0},extra:{}};}
 // Test play (testers and admins): a separate save, so real progress is never touched. Switched in Profile.
-const TESTMODE=store.get('ib.testmode')===true,SAVEKEY=TESTMODE?'ib.save.test':'ib.save.v3';
+// Beta v2.03.00: Badshah story mode has its own save and is played offline (no online, no gimmick vehicles)
+const STORY=store.get('ib.mode')==='story';window.IB_STORY=STORY;
+const TESTMODE=store.get('ib.testmode')===true,SAVEKEY=TESTMODE?(STORY?'ib.save.storytest':'ib.save.test'):STORY?'ib.save.story':'ib.save.v3';
 let P=store.get(SAVEKEY);const hadSave=!!P;
 if(!P){const old=store.get('bb.save.v2');P=newSave();if(old){P.cash=old.cash||P.cash;P.bank=old.bank||0;P.weapons=old.weapons||P.weapons;P.ammo=Object.assign(P.ammo,old.ammo||{});P.homes=(old.homes||[]).filter(h=>W.homes.some(x=>x.id===h));
   P.cars=(old.cars||['auto']).map(t=>({type:SPEC[t]?t:'auto',fuel:80,hp:100,puc:0,ins:0}));P.trips=old.trips||0;}}
@@ -814,7 +816,7 @@ function updPlanes(dt){const pp=ppos();for(const ap of airportPlanes){const a=ap
 
 /* ================= police + wanted ================= */
 const AGGR={off:0,easy:.6,normal:1,hard:1.5};
-function addWanted(n,why){if(CFG.police==='off'||inside)return;const before=player.stars;player.stars=Math.min(5,player.stars+n);player.coolT=0;if(player.stars>before){toast(`${why} · police alerted`,'#ff5d73');emit('stars',player.stars);}renderStars();}
+function addWanted(n,why){if(CFG.police==="off"||inside||afk)return;const before=player.stars;player.stars=Math.min(5,player.stars+n);player.coolT=0;if(player.stars>before){toast(`${why} · police alerted`,'#ff5d73');emit('stars',player.stars);}renderStars();}
 function renderStars(){const el=$('#stars');let h='';for(let i=0;i<5;i++){const on=i<player.stars;h+=`<svg viewBox="0 0 24 24" class="${on?'on':''}"><path d="M12 2.5l2.8 6 6.5.7-4.9 4.4 1.4 6.4L12 16.7 6.2 20l1.4-6.4L2.7 9.2l6.5-.7z" fill="${on?'#ffc93c':'rgba(255,255,255,.18)'}" stroke="${on?'#7a4a00':'none'}" stroke-width="1"/></svg>`;}el.innerHTML=player.stars?h:'';}
 let policeSpawnT=0;
 function spawnPolice(){const pp=ppos();const l=randomLaneNear(pp.x,pp.z,110,170);if(!l)return;lanePos(l,_lp);const v=makeVeh('police',_lp.x,_lp.z,Math.atan2(pp.x-_lp.x,pp.z-_lp.z),'police');v.ai={stuck:0,shootT:2};v.hp=100;}

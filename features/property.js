@@ -10,7 +10,8 @@ window.BBFeatures.push(function (bb) {
   const starterOf = zid => W.homes.find(h => h.starter && h.zone === zid);
   const nearestStarterZone = (x, z) => W.zones.filter(q => starterOf(q.id)).sort((a, b) => Math.hypot(a.x0 + a.nx * 40 - x, a.z0 + a.nz * 40 - z) - Math.hypot(b.x0 + b.nx * 40 - x, b.z0 + b.nz * 40 - z))[0];
   const homePoi = id => bb.pois.find(p => p.type === 'home' && p.extra === id);
-  const day = () => Math.floor(bb.gameMin() / 1440);
+  // Beta v2.03.00: leases run in play days (time you spend in the game), not real days, so rent never runs out while you are away
+  const day = () => bb.playDay();
   function setHomeCity(zid, quiet) { const h = starterOf(zid); if (!h) return false; const p = P(), e = ex(); const old = e.homeCity && starterOf(e.homeCity);
     if (old && old.id !== h.id) { p.homes = p.homes.filter(x => x !== old.id); for (const c of p.cars) if (c.garage === old.id) c.garage = h.id; }
     if (!p.homes.includes(h.id)) p.homes.push(h.id); e.homeCity = zid; bb.save(); if (!quiet) bb.toast(`🏠 Your home is now in ${W.zones.find(q => q.id === zid).name}`, '#3ddc97'); bb.emit('buy', { kind: 'home', id: h.id }); return h; }
@@ -28,7 +29,8 @@ window.BBFeatures.push(function (bb) {
       s => s.onclick = e => { const id = e.target.dataset.id; if (id === 'rent') return sheet(); if (id !== 'move') return; if (cur && !bb.spend(bb.cost('home.move', 5000), true)) return; setHomeCity(h.zone); bb.closeSheet(); bb.enterHome(poi); }); };
   /* renting by the Bay day */
   const rentOf = h => Math.max(150, Math.round(bb.cost('home.' + h.id, h.price) * .004 / 10) * 10);
-  bb.onUpdate(() => { const e = ex(); if (!e.lease) return; const d = day(); for (const [id, until] of Object.entries(e.lease)) if (d > until) { delete e.lease[id]; P().homes = P().homes.filter(x => x !== id); for (const c of P().cars) if (c.garage === id) c.garage = null; const h = bb.homeById(id); bb.toast(`🔑 Your rent for ${h ? h.name : 'a home'} ended · pay again in Menu → Property to keep it`, '#ff9f1c'); bb.save(); } });
+  bb.onStart(() => { const e = ex(); if (e.lease && !e.leaseV2) { const d0 = Math.floor(bb.gameMin() / 1440); for (const id in e.lease) e.lease[id] = day() + Math.max(1, e.lease[id] - d0); } e.leaseV2 = 1; });
+  bb.onUpdate(() => { const e = ex(); if (!e.lease || !e.leaseV2) return; const d = day(); for (const [id, until] of Object.entries(e.lease)) if (d > until) { delete e.lease[id]; P().homes = P().homes.filter(x => x !== id); for (const c of P().cars) if (c.garage === id) c.garage = null; const h = bb.homeById(id); bb.toast(`🔑 Your rent for ${h ? h.name : 'a home'} ended · pay again in Menu → Property to keep it`, '#ff9f1c'); bb.save(); } });
   function sheet() { const p = P(), e = ex(); e.lease = e.lease || {}; const d = day(); const hc = e.homeCity && W.zones.find(q => q.id === e.homeCity);
     const owned = p.homes.map(id => bb.homeById(id)).filter(Boolean);
     const rows = owned.map(h => { const z = W.zones.find(q => q.id === h.zone); const lease = e.lease[h.id] != null; const tenants = p.rent && p.rent[h.id];

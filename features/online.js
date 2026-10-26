@@ -1,9 +1,13 @@
 // Online play: Supabase sign-in (Google or guest), unique usernames, cloud saves, shared admin settings,
 // and the live West region on the Cloudflare server (other players, proximity chat, mute and report).
 // Does nothing until js/online-config.js is filled in.
-window.__ibOnlineV = '2.02.00';
+window.__ibOnlineV = '2.03.00';
 window.BBFeatures.push(function (bb) {
   window.__ibOnlineStage = 'started';
+  // Beta v2.03.00: Badshah story mode is strictly single player: no server, no chat, no cloud save (the story has its own save)
+  if (window.IB_STORY) { const no = () => false, none = () => Promise.resolve({ error: { message: 'Story mode is offline' }, data: null });
+    bb.ONLINE = { story: true, report: no, chatR: 0, client: null, uid: null, username: '', signOut: no, status: 'story', remotes: new Map(), profile: null, myId: null, connect: no, disconnect: no, bubble: no, send: no, silencedUntil: 0, silenceNote: () => '', banned: false, isMuted: no, openChat: () => bb.toast('Chat is off in story mode', '#d6c8e4'), rpc: none, signedIn: false, isTester: false, isAdmin: false, guest: false };
+    window.__ibOnlineStage = 'story'; return; }
   const C = window.ONLINE || {};
   if (!C.supabaseUrl || !C.supabaseKey) {   // this copy has no online settings (for example the Claude preview): say so instead of showing nothing
     const lc = document.querySelector('#top .lcol'); if (lc) { const c = document.createElement('button'); c.id = 'chat'; c.className = 'pill'; c.type = 'button'; c.hidden = true; c.innerHTML = '<i class="dot"></i><b>Offline</b> <small>online play is on indiabaygame.com</small>'; lc.appendChild(c);

@@ -4,6 +4,7 @@
 // Q/Shift descend, C changes the view. Land on open ground or a road and tap "Land and drive" to drive on.
 // Buy it at a car showroom.
 window.BBFeatures.push(function (bb) {
+  if (window.IB_STORY) return; // Beta v2.03.00: no gimmicks in Badshah story mode
   const T = bb.THREE; const LM = c => bb.LMat(c);
   const glass = new T.MeshPhongMaterial({ color: 0x1d4f6b, transparent: true, opacity: .72, shininess: 90, specular: 0x9fd8ff });
   const dark = LM('#1b1f24'), trim = LM('#2c3238'), cyan = new T.MeshBasicMaterial({ color: 0x5ff2ff }), red = new T.MeshBasicMaterial({ color: 0xff3048 });
