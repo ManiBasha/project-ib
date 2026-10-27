@@ -676,3 +676,18 @@ body.cine #hudLogo,body:not(.started) #hudLogo{display:none}
 .spick .slist,.spick .clist{max-height:min(34vh,300px);overflow-y:auto;overscroll-behavior:contain;padding:2px 2px 4px}
 .spick .slist .chip,.spick .clist .chip{font-size:14px;padding:8px 12px}
 .spick .srow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.spick .srow .note{font-size:12px;color:var(--muted)}
+
+/* Beta v2.05.00: zoomable start map with city dots */
+.smap.zm{position:relative;overflow:hidden;touch-action:none}
+.smap.zm svg{cursor:grab;touch-action:none;user-select:none;max-height:min(46vh,420px)!important}
+#cities .smap.zm path{cursor:pointer}#cities .smap.zm path.ok{fill:#ffc93c}#cities .smap.zm path.ok:hover{fill:#ffe08a}#cities .smap.zm path.on{fill:#3ddc97}
+.smap .sdot{fill:#1b1b1f;stroke:#fff;stroke-width:.6;cursor:pointer;vector-effect:non-scaling-stroke}.smap .sdot.big{fill:#d9483b}.smap .sdot.mid{fill:#2d6cdf}.smap .sdot.on{fill:#3ddc97;stroke-width:2}
+.smap .slab{fill:#fff;paint-order:stroke;stroke:#123049;stroke-width:3px;stroke-linejoin:round;font-family:var(--f-display);font-weight:700;cursor:pointer;vector-effect:non-scaling-stroke}.smap .slab.on{fill:#3ddc97}
+.smap .smz{position:absolute;right:8px;top:8px;display:flex;flex-direction:column;gap:4px}.smap .smz button{width:32px;height:32px;border-radius:10px;border:0;background:rgba(14,10,30,.78);color:#fff;font-size:17px;font-weight:800;cursor:pointer}
+.smap .smhint{position:absolute;left:10px;bottom:8px;font-size:11.5px;color:#d6e4f2;background:rgba(14,10,30,.6);padding:3px 8px;border-radius:8px;pointer-events:none}
+
+/* Beta v2.05.00: game mode switch at the top of the start menu */
+#intro .imodes{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+#intro .imodes button{display:flex;flex-direction:column;align-items:flex-start;gap:1px;padding:10px 12px;border-radius:14px;border:2px solid rgba(255,255,255,.18);background:rgba(14,10,30,.62);color:#f4f1ea;cursor:pointer;text-align:left;font-family:var(--f-display)}
+#intro .imodes button span{font-size:20px;line-height:1}#intro .imodes button b{font-size:16px}#intro .imodes button small{font-size:11.5px;color:#cfc6e6}
+#intro .imodes button.on{border-color:#ffc93c;background:rgba(255,201,60,.18);box-shadow:0 0 0 2px rgba(255,201,60,.25)}

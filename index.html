@@ -14,7 +14,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Martel+Sans:wght@400;600&display=swap">
-<link rel="stylesheet" href="css/game.css?v=2.04.00">
+<link rel="stylesheet" href="css/game.css?v=2.05.00">
 </head>
 <body>
 <canvas id="c" aria-label="3D open-world game of West India" tabindex="0"></canvas>
@@ -81,10 +81,10 @@
     <div class="ileft">
       <div class="logo"><img class="brand" src="assets/logo.png" alt="India Bay · Reclaim your kingdom" width="512" height="512"><span class="hi">इंडिया बे</span><h1 id="gName" class="sr">India Bay</h1><p id="gTag">Open-world India</p><span class="ver" id="ver">Beta v2.01.00</span></div>
       <nav class="imenu" aria-label="Start menu">
+        <div class="imodes" id="iModes" role="tablist" aria-label="Game mode"><button type="button" data-mode="story" role="tab"><span>👑</span><b>Badshah</b><small>Missions · solo</small></button><button type="button" data-mode="world" role="tab"><span>🌐</span><b>Multiplayer</b><small>Open world · online</small></button></div>
         <button class="mbtn" id="newGame" type="button" hidden><span>🆕</span>New game</button>
         <button class="go ibig" id="go" disabled><span class="gl">▶</span><span class="gt">Loading…</span><kbd>Enter</kbd></button>
         <button class="mbtn" id="iCity" type="button"><span>🗺</span>Choose your city</button>
-        <button class="mbtn" id="iMode" type="button"><span>👑</span>Badshah · story mode</button>
         <button class="mbtn gmb" id="iGoogle" type="button" hidden><span class="gg">G</span>Sign in with Google</button>
         <button class="mbtn" id="iHow" type="button"><span>🎮</span>How to play</button>
         <button class="mbtn" id="iNew" type="button"><span>✨</span>What's new</button>
@@ -107,112 +107,113 @@
 <div id="sheetWrap" hidden><div id="sheet" role="dialog" aria-modal="true"></div></div>
 <div id="wait" hidden></div>
 
-<script src="js/intro.js?v=2.04.00"></script>
+<script src="js/intro.js?v=2.05.00"></script>
+<script src="js/loadauto.js?v=2.05.00"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>window.BBFeatures=window.BBFeatures||[];</script>
-<script src="js/config.js?v=2.04.00"></script>
-<script src="js/world-west.js?v=2.04.00"></script>
-<script src="js/world-southwest.js?v=2.04.00"></script>
-<script src="js/world-plus.js?v=2.04.00"></script>
-<script src="js/world-plus2.js?v=2.04.00"></script>
-<script src="js/world-southeast.js?v=2.04.00"></script>
-<script src="js/world-north.js?v=2.04.00"></script>
-<script src="js/world-east.js?v=2.04.00"></script>
-<script src="js/football-data.js?v=2.04.00"></script>
-<script src="js/cricket-data.js?v=2.04.00"></script>
-<script src="js/homes-plus.js?v=2.04.00"></script>
-<script src="js/no-religion.js?v=2.04.00"></script>
-<script src="js/prices.js?v=2.04.00"></script>
-<script src="js/landmarks.js?v=2.04.00"></script>
-<script src="js/landmarks-plus.js?v=2.04.00"></script>
-<script src="js/landmarks-mumbai.js?v=2.04.00"></script>
-<script src="js/landmarks-southeast.js?v=2.04.00"></script>
-<script src="js/landmarks-north.js?v=2.04.00"></script>
-<script src="js/landmarks-east.js?v=2.04.00"></script>
-<script src="js/india-states.js?v=2.04.00"></script>
-<script src="js/site-config.js?v=2.04.00"></script>
-<script src="js/online-config.js?v=2.04.00"></script>
+<script src="js/config.js?v=2.05.00"></script>
+<script src="js/world-west.js?v=2.05.00"></script>
+<script src="js/world-southwest.js?v=2.05.00"></script>
+<script src="js/world-plus.js?v=2.05.00"></script>
+<script src="js/world-plus2.js?v=2.05.00"></script>
+<script src="js/world-southeast.js?v=2.05.00"></script>
+<script src="js/world-north.js?v=2.05.00"></script>
+<script src="js/world-east.js?v=2.05.00"></script>
+<script src="js/football-data.js?v=2.05.00"></script>
+<script src="js/cricket-data.js?v=2.05.00"></script>
+<script src="js/homes-plus.js?v=2.05.00"></script>
+<script src="js/no-religion.js?v=2.05.00"></script>
+<script src="js/prices.js?v=2.05.00"></script>
+<script src="js/landmarks.js?v=2.05.00"></script>
+<script src="js/landmarks-plus.js?v=2.05.00"></script>
+<script src="js/landmarks-mumbai.js?v=2.05.00"></script>
+<script src="js/landmarks-southeast.js?v=2.05.00"></script>
+<script src="js/landmarks-north.js?v=2.05.00"></script>
+<script src="js/landmarks-east.js?v=2.05.00"></script>
+<script src="js/india-states.js?v=2.05.00"></script>
+<script src="js/site-config.js?v=2.05.00"></script>
+<script src="js/online-config.js?v=2.05.00"></script>
 <!-- Feature files: one line per file in features/ -->
-<script src="features/timers.js?v=2.04.00"></script>
-<script src="features/cine.js?v=2.04.00"></script>
-<script src="features/cabins.js?v=2.04.00"></script>
-<script src="features/jobs.js?v=2.04.00"></script>
-<script src="features/localjobs.js?v=2.04.00"></script>
-<script src="features/shops.js?v=2.04.00"></script>
-<script src="features/life.js?v=2.04.00"></script>
-<script src="features/travel.js?v=2.04.00"></script>
-<script src="features/transit.js?v=2.04.00"></script>
-<script src="features/transport.js?v=2.04.00"></script>
-<script src="features/rides.js?v=2.04.00"></script>
-<script src="features/islands.js?v=2.04.00"></script>
-<script src="features/festivals.js?v=2.04.00"></script>
-<script src="features/fairs.js?v=2.04.00"></script>
-<script src="features/radio.js?v=2.04.00"></script>
-<script src="features/baygame.js?v=2.04.00"></script>
-<script src="features/minigames.js?v=2.04.00"></script>
-<script src="features/media.js?v=2.04.00"></script>
-<script src="features/film.js?v=2.04.00"></script>
-<script src="features/phoneapps.js?v=2.04.00"></script>
-<script src="features/baygram.js?v=2.04.00"></script>
-<script src="features/story.js?v=2.04.00"></script>
-<script src="features/world.js?v=2.04.00"></script>
-<script src="features/gully.js?v=2.04.00"></script>
-<script src="features/beach.js?v=2.04.00"></script>
-<script src="features/heroes.js?v=2.04.00"></script>
-<script src="features/economy.js?v=2.04.00"></script>
-<script src="features/football.js?v=2.04.00"></script>
-<script src="features/sports.js?v=2.04.00"></script>
-<script src="features/venues.js?v=2.04.00"></script>
-<script src="features/teashop.js?v=2.04.00"></script>
-<script src="features/activities.js?v=2.04.00"></script>
-<script src="features/heli.js?v=2.04.00"></script>
-<script src="features/metro.js?v=2.04.00"></script>
-<script src="features/bullet.js?v=2.04.00"></script>
-<script src="features/zoo.js?v=2.04.00"></script>
-<script src="features/signs.js?v=2.04.00"></script>
-<script src="features/steering.js?v=2.04.00"></script>
-<script src="features/challans.js?v=2.04.00"></script>
-<script src="features/garage.js?v=2.04.00"></script>
-<script src="features/property.js?v=2.04.00"></script>
-<script src="features/apps.js?v=2.04.00"></script>
-<script src="features/foodbag.js?v=2.04.00"></script>
-<script src="features/visitors.js?v=2.04.00"></script>
-<script src="features/testmode.js?v=2.04.00"></script>
-<script src="features/online.js?v=2.04.00"></script>
-<script src="features/nettraffic.js?v=2.04.00"></script>
-<script src="features/voice.js?v=2.04.00"></script>
-<script src="features/phonecalls.js?v=2.04.00"></script>
-<script src="features/invite.js?v=2.04.00"></script>
-<script src="features/deadends.js?v=2.04.00"></script>
-<script src="features/footpaths.js?v=2.04.00"></script>
-<script src="features/interiors.js?v=2.04.00"></script>
-<script src="features/sightsee.js?v=2.04.00"></script>
-<script src="features/plates.js?v=2.04.00"></script>
-<script src="features/tow.js?v=2.04.00"></script>
-<script src="features/boatcrew.js?v=2.04.00"></script>
-<script src="features/vehlife.js?v=2.04.00"></script>
-<script src="features/medicine.js?v=2.04.00"></script>
-<script src="features/nature.js?v=2.04.00"></script>
-<script src="features/parkfauna.js?v=2.04.00"></script>
-<script src="features/loot.js?v=2.04.00"></script>
-<script src="features/hideout.js?v=2.04.00"></script>
-<script src="features/locker.js?v=2.04.00"></script>
-<script src="features/boats.js?v=2.04.00"></script>
-<script src="features/badshah/missions-act12.js?v=2.04.00"></script>
-<script src="features/badshah/missions-kings-a.js?v=2.04.00"></script>
-<script src="features/badshah/missions-kings-b.js?v=2.04.00"></script>
-<script src="features/badshah/missions-final.js?v=2.04.00"></script>
-<script src="features/badshah/engine.js?v=2.04.00"></script>
-<script src="features/playact.js?v=2.04.00"></script>
-<script src="features/sky.js?v=2.04.00"></script>
-<script src="features/drivetest.js?v=2.04.00"></script>
-<script src="features/skycar.js?v=2.04.00"></script>
-<script src="features/groups.js?v=2.04.00"></script>
-<script src="features/locshare.js?v=2.04.00"></script>
-<script src="features/events.js?v=2.04.00"></script>
-<script src="features/adminmsg.js?v=2.04.00"></script>
-<script src="features/stats.js?v=2.04.00"></script>
-<script src="features/sound.js?v=2.04.00"></script>
-<script src="js/game.js?v=2.04.00"></script>
+<script src="features/timers.js?v=2.05.00"></script>
+<script src="features/cine.js?v=2.05.00"></script>
+<script src="features/cabins.js?v=2.05.00"></script>
+<script src="features/jobs.js?v=2.05.00"></script>
+<script src="features/localjobs.js?v=2.05.00"></script>
+<script src="features/shops.js?v=2.05.00"></script>
+<script src="features/life.js?v=2.05.00"></script>
+<script src="features/travel.js?v=2.05.00"></script>
+<script src="features/transit.js?v=2.05.00"></script>
+<script src="features/transport.js?v=2.05.00"></script>
+<script src="features/rides.js?v=2.05.00"></script>
+<script src="features/islands.js?v=2.05.00"></script>
+<script src="features/festivals.js?v=2.05.00"></script>
+<script src="features/fairs.js?v=2.05.00"></script>
+<script src="features/radio.js?v=2.05.00"></script>
+<script src="features/baygame.js?v=2.05.00"></script>
+<script src="features/minigames.js?v=2.05.00"></script>
+<script src="features/media.js?v=2.05.00"></script>
+<script src="features/film.js?v=2.05.00"></script>
+<script src="features/phoneapps.js?v=2.05.00"></script>
+<script src="features/baygram.js?v=2.05.00"></script>
+<script src="features/story.js?v=2.05.00"></script>
+<script src="features/world.js?v=2.05.00"></script>
+<script src="features/gully.js?v=2.05.00"></script>
+<script src="features/beach.js?v=2.05.00"></script>
+<script src="features/heroes.js?v=2.05.00"></script>
+<script src="features/economy.js?v=2.05.00"></script>
+<script src="features/football.js?v=2.05.00"></script>
+<script src="features/sports.js?v=2.05.00"></script>
+<script src="features/venues.js?v=2.05.00"></script>
+<script src="features/teashop.js?v=2.05.00"></script>
+<script src="features/activities.js?v=2.05.00"></script>
+<script src="features/heli.js?v=2.05.00"></script>
+<script src="features/metro.js?v=2.05.00"></script>
+<script src="features/bullet.js?v=2.05.00"></script>
+<script src="features/zoo.js?v=2.05.00"></script>
+<script src="features/signs.js?v=2.05.00"></script>
+<script src="features/steering.js?v=2.05.00"></script>
+<script src="features/challans.js?v=2.05.00"></script>
+<script src="features/garage.js?v=2.05.00"></script>
+<script src="features/property.js?v=2.05.00"></script>
+<script src="features/apps.js?v=2.05.00"></script>
+<script src="features/foodbag.js?v=2.05.00"></script>
+<script src="features/visitors.js?v=2.05.00"></script>
+<script src="features/testmode.js?v=2.05.00"></script>
+<script src="features/online.js?v=2.05.00"></script>
+<script src="features/nettraffic.js?v=2.05.00"></script>
+<script src="features/voice.js?v=2.05.00"></script>
+<script src="features/phonecalls.js?v=2.05.00"></script>
+<script src="features/invite.js?v=2.05.00"></script>
+<script src="features/deadends.js?v=2.05.00"></script>
+<script src="features/footpaths.js?v=2.05.00"></script>
+<script src="features/interiors.js?v=2.05.00"></script>
+<script src="features/sightsee.js?v=2.05.00"></script>
+<script src="features/plates.js?v=2.05.00"></script>
+<script src="features/tow.js?v=2.05.00"></script>
+<script src="features/boatcrew.js?v=2.05.00"></script>
+<script src="features/vehlife.js?v=2.05.00"></script>
+<script src="features/medicine.js?v=2.05.00"></script>
+<script src="features/nature.js?v=2.05.00"></script>
+<script src="features/parkfauna.js?v=2.05.00"></script>
+<script src="features/loot.js?v=2.05.00"></script>
+<script src="features/hideout.js?v=2.05.00"></script>
+<script src="features/locker.js?v=2.05.00"></script>
+<script src="features/boats.js?v=2.05.00"></script>
+<script src="features/badshah/missions-act12.js?v=2.05.00"></script>
+<script src="features/badshah/missions-kings-a.js?v=2.05.00"></script>
+<script src="features/badshah/missions-kings-b.js?v=2.05.00"></script>
+<script src="features/badshah/missions-final.js?v=2.05.00"></script>
+<script src="features/badshah/engine.js?v=2.05.00"></script>
+<script src="features/playact.js?v=2.05.00"></script>
+<script src="features/sky.js?v=2.05.00"></script>
+<script src="features/drivetest.js?v=2.05.00"></script>
+<script src="features/skycar.js?v=2.05.00"></script>
+<script src="features/groups.js?v=2.05.00"></script>
+<script src="features/locshare.js?v=2.05.00"></script>
+<script src="features/events.js?v=2.05.00"></script>
+<script src="features/adminmsg.js?v=2.05.00"></script>
+<script src="features/stats.js?v=2.05.00"></script>
+<script src="features/sound.js?v=2.05.00"></script>
+<script src="js/game.js?v=2.05.00"></script>
 </body>
 </html>

@@ -1,7 +1,7 @@
 // Online play: Supabase sign-in (Google or guest), unique usernames, cloud saves, shared admin settings,
 // and the live West region on the Cloudflare server (other players, proximity chat, mute and report).
 // Does nothing until js/online-config.js is filled in.
-window.__ibOnlineV = '2.04.00';
+window.__ibOnlineV = '2.05.00';
 window.BBFeatures.push(function (bb) {
   window.__ibOnlineStage = 'started';
   // Beta v2.04.00: Badshah story mode signs in (Google or guest) and keeps its own cloud save (table story_saves) so a

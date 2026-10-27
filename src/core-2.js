@@ -607,8 +607,9 @@ const ppos=()=>player.mode==='drive'&&player.veh?player.veh.pos:player.pos;
 const WEAP={fist:{name:'Fists',range:1.9,rate:.45,melee:true,hit:1},bat:{name:'Cricket bat',range:2.6,rate:.55,melee:true,hit:2},lathi:{name:'Lathi',range:2.8,rate:.5,melee:true,hit:2},knife:{name:'Knife',range:1.8,rate:.33,melee:true,hit:3},pistol:{name:'Pistol',range:60,rate:.32,ammo:'pistol',dmg:25},shotgun:{name:'Shotgun',range:28,rate:.95,ammo:'shotgun',dmg:25,two:true},smg:{name:'SMG',range:42,rate:.11,ammo:'smg',dmg:12,two:true},rifle:{name:'Rifle',range:130,rate:1.1,ammo:'rifle',dmg:60,two:true}};
 
 /* save */
-function newSave(){return{v:3,name:'',age18:false,cash:CFG.startCash,bank:0,health:100,hunger:80,bladder:80,energy:85,weapons:['fist'],ammo:{pistol:0,shotgun:0,smg:0,rifle:0},armour:0,weapon:'fist',
-  cars:[{type:'auto',fuel:80,hp:100,puc:0,ins:0}],homes:[],pos:null,inCar:0,trips:0,lic:{two:false,lmv:false,heavy:false},helmet:false,
+// Beta v2.05.00: Badshah starts broke (₹500, on foot); Multiplayer starts with the admin's start cash and an auto
+function newSave(){return{v:3,name:'',age18:false,cash:STORY?500:CFG.startCash,bank:0,health:100,hunger:80,bladder:80,energy:85,weapons:['fist'],ammo:{pistol:0,shotgun:0,smg:0,rifle:0},armour:0,weapon:'fist',
+  cars:STORY?[]:[{type:'auto',fuel:80,hp:100,puc:0,ins:0}],homes:[],pos:null,inCar:0,trips:0,lic:{two:false,lmv:false,heavy:false},helmet:false,
   outfit:{top:'shirt',topCol:'#e8573e',botCol:'#2d3142',shoes:'chappal',glasses:false,cap:false},look:null,wardrobe:['shirt'],furniture:{},phone:'smart',challans:[],
   ratings:{},jobs:{},discovered:{},ach:{},daily:{last:'',streak:0},story:{step:0,done:false},biz:[],rent:{},seenVersion:'',robbedAt:-99,stats:{km:0,lions:0,trips:0,earned:0,fines:0},extra:{}};}
 // Test play (testers and admins): a separate save, so real progress is never touched. Switched in Profile.

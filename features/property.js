@@ -17,7 +17,8 @@ window.BBFeatures.push(function (bb) {
     if (!p.homes.includes(h.id)) p.homes.push(h.id); e.homeCity = zid; bb.save(); if (!quiet) bb.toast(`🏠 Your home is now in ${W.zones.find(q => q.id === zid).name}`, '#3ddc97'); bb.emit('buy', { kind: 'home', id: h.id }); return h; }
   // a new game: home city = the city you start in, and you start at your home with your vehicle outside
   const fresh = !P().pos;   // a brand-new game (no saved position yet)
-  bb.onStart(() => { const e = ex(); if (e.homeCity && starterOf(e.homeCity)) { const h = starterOf(e.homeCity); if (!P().homes.includes(h.id)) P().homes.push(h.id); return; }
+  bb.onStart(() => { if (window.IB_STORY) return; // Badshah has no free starter home: Master-ji gives you a bed
+    const e = ex(); if (e.homeCity && starterOf(e.homeCity)) { const h = starterOf(e.homeCity); if (!P().homes.includes(h.id)) P().homes.push(h.id); return; }
     const pp = bb.ppos(); const z = bb.zoneAt(pp.x, pp.z, 300) && starterOf(bb.zoneAt(pp.x, pp.z, 300).id) ? bb.zoneAt(pp.x, pp.z, 300) : nearestStarterZone(pp.x, pp.z); if (!z) return;
     const h = setHomeCity(z.id, true); const poi = homePoi(h.id); if (!poi) return; if (!fresh) return bb.toast(`🏠 You have a free starter home with a garage in ${z.name} · Menu → Property`, '#3ddc97');
     const [x, zz, hd] = bb.roadSpotNear(poi); const v = bb.player.veh; bb.teleport(x, zz, hd); if (v) { v.pos.set(x, 0, zz); v.h = hd; v.v = 0; bb.enterVehicle(v); }

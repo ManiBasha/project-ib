@@ -200,7 +200,7 @@ window.BBFeatures.push(function (bb) {
     const far = Math.hypot(pp.x - at0.x, pp.z - at0.z) > 2500; const zz = bb.zoneAt(at0.x, at0.z, 300);
     return { pri: 30, k: `👑 Badshah · ${nx.m.id}`, t: nx.m.title, m: far ? `Travel to ${zz ? zz.name : 'the marker'}: train or flight (Phone → BayTraveler), or drive · then the 👑 marker` : `Go to the 👑 marker · ${at0.name}`, target: { x: at0.x, z: at0.z, col: 0xf2c14e } }; });
   // the start marker: walk or drive into it
-  bb.onUpdate((dt, now) => { if (!bb.started) return; if (!run) { const nx = nextMission(); if (nx && nx.ok && !nx.pick && !(bb.CINE && bb.CINE.on) && !bb.inside) { const a0 = at(nx.m.start || 'garage'); const pp = bb.ppos(); if (Math.hypot(pp.x - a0.x, pp.z - a0.z) < 6) begin(nx.m); } } else { updNPC(dt, now); const st = stepOf(); if (st && STEP[st.type] && STEP[st.type].update) STEP[st.type].update(st, cur.st, dt, now); } });
+  bb.onUpdate((dt, now) => { if (!bb.started) return; if (!run) { const nx = nextMission(); if (nx && nx.ok && !nx.pick && !(bb.CINE && bb.CINE.on) && !bb.inside && !document.querySelector('#sheetWrap:not([hidden])')) { const a0 = at(nx.m.start || 'garage'); const pp = bb.ppos(); if (Math.hypot(pp.x - a0.x, pp.z - a0.z) < 6) begin(nx.m); } } else { updNPC(dt, now); const st = stepOf(); if (st && STEP[st.type] && STEP[st.type].update) STEP[st.type].update(st, cur.st, dt, now); } });
   /* ================= step types ================= */
   const reach = (p, r) => { const pp = bb.ppos(); return Math.hypot(pp.x - p.x, pp.z - p.z) < (r || 7); };
   const inVeh = types => pl.mode === 'drive' && pl.veh && (!types || types.includes(pl.veh.type));

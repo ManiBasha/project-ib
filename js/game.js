@@ -6,7 +6,7 @@ const W=window.WORLD,LM=window.LANDMARKS;
 // Beta v2.00.00: the map reaches north of the old top edge (Delhi, Punjab, the Himalaya), so z can be negative down to W.Z0
 const Z0=W.Z0||0;
 try{await Promise.race([document.fonts.load('800 48px "Baloo 2"'),new Promise(r=>setTimeout(r,1500))]);}catch(e){}
-const VERSION='Beta v2.04.00';
+const VERSION='Beta v2.05.00';
 
 /* ================= storage + config ================= */
 const store={get(k){try{return JSON.parse(localStorage.getItem(k));}catch(e){return null;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}};
@@ -1200,8 +1200,9 @@ const ppos=()=>player.mode==='drive'&&player.veh?player.veh.pos:player.pos;
 const WEAP={fist:{name:'Fists',range:1.9,rate:.45,melee:true,hit:1},bat:{name:'Cricket bat',range:2.6,rate:.55,melee:true,hit:2},lathi:{name:'Lathi',range:2.8,rate:.5,melee:true,hit:2},knife:{name:'Knife',range:1.8,rate:.33,melee:true,hit:3},pistol:{name:'Pistol',range:60,rate:.32,ammo:'pistol',dmg:25},shotgun:{name:'Shotgun',range:28,rate:.95,ammo:'shotgun',dmg:25,two:true},smg:{name:'SMG',range:42,rate:.11,ammo:'smg',dmg:12,two:true},rifle:{name:'Rifle',range:130,rate:1.1,ammo:'rifle',dmg:60,two:true}};
 
 /* save */
-function newSave(){return{v:3,name:'',age18:false,cash:CFG.startCash,bank:0,health:100,hunger:80,bladder:80,energy:85,weapons:['fist'],ammo:{pistol:0,shotgun:0,smg:0,rifle:0},armour:0,weapon:'fist',
-  cars:[{type:'auto',fuel:80,hp:100,puc:0,ins:0}],homes:[],pos:null,inCar:0,trips:0,lic:{two:false,lmv:false,heavy:false},helmet:false,
+// Beta v2.05.00: Badshah starts broke (₹500, on foot); Multiplayer starts with the admin's start cash and an auto
+function newSave(){return{v:3,name:'',age18:false,cash:STORY?500:CFG.startCash,bank:0,health:100,hunger:80,bladder:80,energy:85,weapons:['fist'],ammo:{pistol:0,shotgun:0,smg:0,rifle:0},armour:0,weapon:'fist',
+  cars:STORY?[]:[{type:'auto',fuel:80,hp:100,puc:0,ins:0}],homes:[],pos:null,inCar:0,trips:0,lic:{two:false,lmv:false,heavy:false},helmet:false,
   outfit:{top:'shirt',topCol:'#e8573e',botCol:'#2d3142',shoes:'chappal',glasses:false,cap:false},look:null,wardrobe:['shirt'],furniture:{},phone:'smart',challans:[],
   ratings:{},jobs:{},discovered:{},ach:{},daily:{last:'',streak:0},story:{step:0,done:false},biz:[],rent:{},seenVersion:'',robbedAt:-99,stats:{km:0,lions:0,trips:0,earned:0,fines:0},extra:{}};}
 // Test play (testers and admins): a separate save, so real progress is never touched. Switched in Profile.
@@ -1882,7 +1883,7 @@ function whatsNew(auto,tab){const list=clList();if(!list.length&&auto)return;tab
   openSheet(auto?`What's new in ${esc(list[0].v)}`:"What's new",auto?'Since you last played':`${list.length} updates · you have ${esc(VERSION)}`,tabs+body+(auto?rowHtml('all','Every update and all features','The full changelog and everything you can do','Open','ghost'):''),
     s=>s.onclick=e=>{const t=e.target.closest('[data-wt]');if(t)return whatsNew(false,t.dataset.wt);if(e.target.dataset.id==='all')whatsNew(false);},()=>{if(list[0]){P.seenVersion=list[0].v;dirty=true;}});}
 // Settings → Features: what the game has (Beta v1.0.0 lists features, not a change history)
-const FEATURES=[['🗺','A big open world','West and South-West India on one map: Mumbai, Pune, Ahmedabad, Jaipur, Udaipur, Goa, Bengaluru, Mysuru, Mangaluru, Kochi, Thiruvananthapuram, Lakshadweep and 140+ cities and towns, with real landmarks, highways, expressways, flyovers, ghats, beaches, backwaters and deserts.'],
+const FEATURES=[['👑','Badshah mode','A mission-based game mode, played solo with its own save and cloud saves. Choose it at the top of the start menu.'],['🗺','A big open world','West and South-West India on one map: Mumbai, Pune, Ahmedabad, Jaipur, Udaipur, Goa, Bengaluru, Mysuru, Mangaluru, Kochi, Thiruvananthapuram, Lakshadweep and 140+ cities and towns, with real landmarks, highways, expressways, flyovers, ghats, beaches, backwaters and deserts.'],
   ['🚗','Drive anything','Cycles, scooters, bikes, autos, cars, SUVs and sports cars. Fuel and CNG pumps, mechanics, garages, RTO licences, helmets and traffic challans. Ride trains, the Mumbai–Ahmedabad bullet train, the metro on its elevated lines, buses, ferries, flights and helicopters, with the view out of the window.'],
   ['💼','Work and money','Food deliveries, auto and cab rides (accept the ones you want), 74 local trades and crafts in Local work, job boards, your own businesses and homes, the bank and BayPay.'],
   ['🍛','Live like a local','Regional food at every stall, Swiggy and Zomato delivery, BayCart shopping, a food bag for later, and needs for food and sleep. Buy homes, furniture and clothes.'],
@@ -2421,21 +2422,57 @@ function statePlayable(st){const r=REGIONS.find(q=>q.id===stateRegion(st));retur
 // (the small India map only shows where the chosen state is)
 const SIZE_ORD={big:0,mid:1,small:2};
 function startStates(){return Object.keys(W.states).filter(st=>st!=='FR'&&statePlayable(st)).sort((a,b)=>W.states[a].localeCompare(W.states[b]));}
-function drawStartMap(){const el=$('#cities');const IS=window.INDIA_STATES;
-  const sel=startPick?(SVGID[startPick.st]||startPick.st).toLowerCase():'';
-  el.innerHTML=(IS?`<div class="smap"><svg viewBox="${IS.viewBox}" role="img" aria-label="Map of India">${IS.states.map(q=>{const st=STOF[q.id.toUpperCase()]||q.id.toUpperCase();const on=startPick&&(st===startPick.st||(startPick.st==='DD'&&q.id==='dn'));return `<path d="${q.d}" class="${statePlayable(st)?'ok':'no'}${on||q.id===sel?' on':''}"><title>${esc(q.name)}</title></path>`;}).join('')}</svg></div>`:'')+`<div class="spick" id="spick"></div>`;
+// Beta v2.05.00: the start map is a real map. Scroll, pinch or use + and − to zoom, drag to move. Tap a state to zoom in on it,
+// then tap one of its cities (the dots) to start there. The lists below the map stay for small screens.
+let smVB=null;const SMFULL=(()=>{const IS=window.INDIA_STATES;if(!IS)return null;const [x,y,w,h]=IS.viewBox.split(' ').map(Number);return{x,y,w,h};})();
+const pickZones=st=>W.zones.filter(z=>z.st===st||(st==='JK'&&z.st==='LA'));
+function drawStartMap(){const el=$('#cities');const IS=window.INDIA_STATES;if(!IS){el.innerHTML='<div class="spick" id="spick"></div>';pickRow();return;}
+  if(!smVB)smVB=Object.assign({},SMFULL);const stOf=q=>STOF[q.id.toUpperCase()]||q.id.toUpperCase();
+  el.innerHTML=`<div class="smap zm"><svg id="smSvg" viewBox="${smVB.x} ${smVB.y} ${smVB.w} ${smVB.h}" role="img" aria-label="Map of India"><g id="smStates">${IS.states.map(q=>{const st=stOf(q);const ok=statePlayable(st)||(st==='JK'&&statePlayable('LA'));const on=startPick&&(st===startPick.st);return `<path data-st="${ok?st:''}" d="${q.d}" class="${ok?'ok':'no'}${on?' on':''}"><title>${esc(q.name)}</title></path>`;}).join('')}</g><g id="smDots"></g></svg>
+    <div class="smz"><button type="button" data-zm="in" aria-label="Zoom in">＋</button><button type="button" data-zm="out" aria-label="Zoom out">－</button><button type="button" data-zm="all" aria-label="Whole India">⤢</button></div><div class="smhint">${startPick?'Tap a city dot to start there':'Tap a state on the map · scroll or pinch to zoom'}</div></div><div class="spick" id="spick"></div>`;
+  const svg=$('#smSvg');wireMap(svg);if(startPick){placeDots(svg);if(startPick.zoomTo){startPick.zoomTo=false;zoomState(svg,startPick.st);}}
   pickRow();}
+function setVB(svg,v){const F=SMFULL;v.w=clamp(v.w,F.w/14,F.w*1.15);v.h=v.w*F.h/F.w;v.x=clamp(v.x,F.x-v.w*.5,F.x+F.w-v.w*.5);v.y=clamp(v.y,F.y-v.h*.5,F.y+F.h-v.h*.5);smVB=v;svg.setAttribute('viewBox',`${v.x} ${v.y} ${v.w} ${v.h}`);dotSizes(svg);}
+function zoomAt(svg,k,px,py){const v=Object.assign({},smVB);const nw=clamp(v.w*k,SMFULL.w/14,SMFULL.w*1.15),f=nw/v.w;v.x=px-(px-v.x)*f;v.y=py-(py-v.y)*f;v.w=nw;setVB(svg,v);}
+function svgPt(svg,cx,cy){const r=svg.getBoundingClientRect();const s=Math.max(smVB.w/r.width,smVB.h/r.height);const ox=(r.width*s-smVB.w)/2,oy=(r.height*s-smVB.h)/2;return{x:smVB.x+(cx-r.left)*s-ox,y:smVB.y+(cy-r.top)*s-oy,s};}
+function zoomState(svg,st){const ps=[...svg.querySelectorAll(`path[data-st="${st}"]`)];if(!ps.length)return;let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;for(const p of ps){const b=p.getBBox();x0=Math.min(x0,b.x);y0=Math.min(y0,b.y);x1=Math.max(x1,b.x+b.width);y1=Math.max(y1,b.y+b.height);}
+  const w=Math.max((x1-x0)*1.35,(y1-y0)*1.35*SMFULL.w/SMFULL.h,SMFULL.w/14);const h=w*SMFULL.h/SMFULL.w;const from=Object.assign({},smVB),to={x:(x0+x1)/2-w/2,y:(y0+y1)/2-h/2,w,h};const t0=performance.now();
+  const step=()=>{const k=Math.min(1,(performance.now()-t0)/450),e=1-Math.pow(1-k,3);setVB(svg,{x:from.x+(to.x-from.x)*e,y:from.y+(to.y-from.y)*e,w:from.w+(to.w-from.w)*e,h:0});if(k<1&&svg.isConnected)requestAnimationFrame(step);};step();}
+function placeDots(svg){const g=svg.querySelector('#smDots');const st=startPick.st;const ps=[...svg.querySelectorAll(`path[data-st="${st}"]`)];const zs=pickZones(st);if(!ps.length||!zs.length)return;
+  let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;for(const p of ps){const b=p.getBBox();x0=Math.min(x0,b.x);y0=Math.min(y0,b.y);x1=Math.max(x1,b.x+b.width);y1=Math.max(y1,b.y+b.height);}
+  const C=z=>[z.x0+z.nx*40,z.z0+z.nz*40];let gx0=1e9,gz0=1e9,gx1=-1e9,gz1=-1e9;for(const z of zs){const [a,b]=C(z);gx0=Math.min(gx0,a);gx1=Math.max(gx1,a);gz0=Math.min(gz0,b);gz1=Math.max(gz1,b);}
+  const inside=(x,y)=>{try{const pt=new DOMPoint(x,y);return ps.some(p=>p.isPointInFill(pt));}catch(e){return true;}};const mx=(x0+x1)/2,my=(y0+y1)/2;
+  const ns='http://www.w3.org/2000/svg';g.innerHTML='';
+  for(const z of zs.slice().sort((a,b)=>SIZE_ORD[b.size]-SIZE_ORD[a.size])){const [a,b]=C(z);let x=x0+(x1-x0)*(.12+.76*(gx1>gx0?(a-gx0)/(gx1-gx0):.5)),y=y0+(y1-y0)*(.12+.76*(gz1>gz0?(b-gz0)/(gz1-gz0):.5));for(let k=0;k<14&&!inside(x,y);k++){x+=(mx-x)*.2;y+=(my-y)*.2;}
+    const c=document.createElementNS(ns,'circle');c.setAttribute('cx',x);c.setAttribute('cy',y);c.dataset.z=z.id;c.dataset.sz=z.size;c.setAttribute('class','sdot'+(startPick.zone===z?' on':'')+' '+z.size);const t=document.createElementNS(ns,'title');t.textContent=z.name;c.appendChild(t);g.appendChild(c);
+    const tx=document.createElementNS(ns,'text');tx.setAttribute('x',x);tx.setAttribute('y',y);tx.dataset.z=z.id;tx.dataset.sz=z.size;tx.textContent=z.name;tx.setAttribute('class','slab'+(startPick.zone===z?' on':'')+' '+z.size);g.appendChild(tx);}
+  dotSizes(svg);}
+function dotSizes(svg){const k=smVB.w/SMFULL.w;const show=k<.35;for(const c of svg.querySelectorAll('.sdot')){const big=c.dataset.sz==='big'?1.6:c.dataset.sz==='mid'?1.25:1;c.setAttribute('r',4.2*k*big*(c.classList.contains('on')?1.5:1));}
+  for(const t of svg.querySelectorAll('.slab')){const on=t.classList.contains('on');const vis=on||t.dataset.sz==='big'||(show&&t.dataset.sz==='mid')||k<.16;t.style.display=vis?'':'none';t.setAttribute('font-size',11*k);t.setAttribute('dx',6*k);t.setAttribute('dy',3.5*k);}}
+function wireMap(svg){const pts=new Map();let moved=0,pinch0=null,start=null;
+  svg.addEventListener('wheel',e=>{e.preventDefault();const p=svgPt(svg,e.clientX,e.clientY);zoomAt(svg,e.deltaY>0?1.18:1/1.18,p.x,p.y);},{passive:false});
+  svg.addEventListener('pointerdown',e=>{svg.setPointerCapture&&svg.setPointerCapture(e.pointerId);pts.set(e.pointerId,{x:e.clientX,y:e.clientY});moved=0;start={x:e.clientX,y:e.clientY,vb:Object.assign({},smVB),t:e.target};if(pts.size===2){const [a,b]=[...pts.values()];pinch0={d:Math.hypot(a.x-b.x,a.y-b.y),vb:Object.assign({},smVB),c:svgPt(svg,(a.x+b.x)/2,(a.y+b.y)/2)};}});
+  svg.addEventListener('pointermove',e=>{if(!pts.has(e.pointerId))return;pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(pts.size===2&&pinch0){const [a,b]=[...pts.values()];const d=Math.hypot(a.x-b.x,a.y-b.y);const k=pinch0.d/Math.max(10,d);smVB=Object.assign({},pinch0.vb);zoomAt(svg,k,pinch0.c.x,pinch0.c.y);moved=99;return;}
+    if(!start)return;const dx=e.clientX-start.x,dy=e.clientY-start.y;moved=Math.max(moved,Math.hypot(dx,dy));if(moved<6)return;const r=svg.getBoundingClientRect();const s=Math.max(start.vb.w/r.width,start.vb.h/r.height);setVB(svg,{x:start.vb.x-dx*s,y:start.vb.y-dy*s,w:start.vb.w,h:start.vb.h});});
+  const up=e=>{const was=pts.has(e.pointerId);pts.delete(e.pointerId);if(pts.size<2)pinch0=null;if(!was||pts.size)return;const t=start&&start.t;start=null;if(moved>=6||!t)return;
+    const z=t.dataset&&t.dataset.z;if(z&&startPick){startPick.zone=W.zones.find(q=>q.id===z);drawStartMap();return;}
+    const st=t.dataset&&t.dataset.st;if(st){startPick={st,zone:W.zones.find(x=>x.id===W.startZones[st])||pickZones(st)[0],zoomTo:true};drawStartMap();}};
+  svg.addEventListener('pointerup',up);svg.addEventListener('pointercancel',e=>{pts.delete(e.pointerId);pinch0=null;start=null;});
+  svg.parentNode.querySelector('.smz').onclick=e=>{const k=e.target.dataset.zm;if(!k)return;if(k==='all'){setVB(svg,Object.assign({},SMFULL));return;}zoomAt(svg,k==='in'?1/1.5:1.5,smVB.x+smVB.w/2,smVB.y+smVB.h/2);};}
 function pickRow(){const el=$('#spick');if(!el)return;const go0=$('#go'),go=go0.querySelector('.gt')||go0;
   if(!startPick){const lz=lastZone();
     el.innerHTML=(hadSave?`<p>Continue where you left off${lz?' in <b>'+esc(lz.name)+'</b>':''}, or pick a state to travel somewhere new.</p>`:`<p><b>Choose your state</b>, then a city.</p>`)+
       `<div class="chips slist">${startStates().map(st=>`<button class="chip" data-st="${st}">${esc(W.states[st])}</button>`).join('')}</div>`;
     go.textContent=hadSave?(lz?'Continue in '+lz.name:'Continue'):'Start';
-    el.onclick=e=>{const st=e.target.dataset.st;if(!st)return;startPick={st,zone:W.zones.find(x=>x.id===W.startZones[st])||W.zones.find(z=>z.st===st)};drawStartMap();};return;}
-  const st=startPick.st,zs=W.zones.filter(z=>z.st===st).sort((a,b)=>(SIZE_ORD[a.size]-SIZE_ORD[b.size])||a.name.localeCompare(b.name));
+    el.onclick=e=>{const st=e.target.dataset.st;if(!st)return;startPick={st,zone:W.zones.find(x=>x.id===W.startZones[st])||pickZones(st)[0],zoomTo:true};drawStartMap();};return;}
+  const st=startPick.st,zs=pickZones(st).sort((a,b)=>(SIZE_ORD[a.size]-SIZE_ORD[b.size])||a.name.localeCompare(b.name));
   el.innerHTML=`<div class="srow"><button class="chip" data-back="1">‹ All states</button><b>${esc(W.states[st])}</b><span class="note">${zs.length} ${zs.length===1?'city':'cities and towns'}</span></div><div class="chips clist">${zs.map(z=>`<button class="chip${z===startPick.zone?' on':''}" data-z="${z.id}">${esc(z.name)}</button>`).join('')}</div><button class="go spgo" type="button" data-spgo="1">▶ ${hadSave?'Go to':'Start at'} ${esc(startPick.zone.name)}</button>`;
-  el.onclick=e=>{if(e.target.closest('[data-back]')){startPick=null;drawStartMap();return;}if(e.target.closest('[data-spgo]')){if(!go0.disabled)go0.click();else toast('Still loading · one moment','#d6c8e4');return;}const id=e.target.dataset.z;if(!id)return;startPick.zone=W.zones.find(z=>z.id===id);pickRow();};
+  el.onclick=e=>{if(e.target.closest('[data-back]')){startPick=null;smVB=Object.assign({},SMFULL);drawStartMap();return;}if(e.target.closest('[data-spgo]')){if(!go0.disabled)go0.click();else toast('Still loading · one moment','#d6c8e4');return;}const id=e.target.dataset.z;if(!id)return;startPick.zone=W.zones.find(z=>z.id===id);drawStartMap();};
   go.textContent=(hadSave?'Go to ':'Start at ')+startPick.zone.name;}
 function lastZone(){if(!hadSave||!P.pos)return null;return zoneAt(P.pos.x,P.pos.z,300)||W.zones.slice().sort((a,b)=>Math.hypot(a.x0+a.nx*40-P.pos.x,a.z0+a.nz*40-P.pos.z)-Math.hypot(b.x0+b.nx*40-P.pos.x,b.z0+b.nz*40-P.pos.z))[0];}
+function storyStart(z){const cx=z.x0+z.nx*40,cz=z.z0+z.nz*40;const inZ=p=>p.x>z.x0-30&&p.x<z.x0+z.nx*80+30&&p.z>z.z0-30&&p.z<z.z0+z.nz*80+30;let best=null,bd=1e12;for(const t of ['station','bus'])if(!best)for(const p of pois)if(p.type===t&&inZ(p)){const d=Math.hypot(p.x-cx,p.z-cz);if(d<bd){bd=d;best=p;}}
+  if(!best)for(const p of pois)if(p.type==='station'){const d=Math.hypot(p.x-cx,p.z-cz);if(d<bd&&d<1500){bd=d;best=p;}}if(best)return{x:best.x+Math.sin(best.rot||0)*2,z:best.z+Math.cos(best.rot||0)*2,h:(best.rot||0)+Math.PI};const r=startSpot(z);return r;}
 function startSpot(z){const cx=z.x0+z.nx*40,cz=z.z0+z.nz*40;const r=nearestRoadPoint(cx,cz,400);if(!r)return{x:cx,z:cz,h:0};return{x:r.x,z:r.z,h:Math.atan2(r.e.dx,r.e.dz)};}
 $('#newGame').onclick=e=>{const b=$('#newGame');if(b.dataset.sure){P=newSave();store.set(SAVEKEY,P);location.reload();return;}
   openSheet('🆕 Start a new game?','Your player starts again from the beginning',`<p class="note">Your money, homes, vehicles, story and achievements are reset${P.name?' for <b>'+esc(P.name)+'</b>':''}. This cannot be undone.</p><div class="stack"><button class="buy danger" data-id="yes">Yes, start a new game</button><button class="go" data-id="no">No, keep playing</button></div>`,
@@ -2445,6 +2482,7 @@ function begin(){setAvatar();document.body.classList.remove('pre');$('#intro').h
   if(!startedOnce){startedOnce=true;if(!CFG.challansOn||!Array.isArray(P.challans))P.challans=[];
     P.cars.forEach((c,i)=>{if(c.x!=null)spawnOwned(i,c.x,c.z,c.h||0);});
     if(P.pos){if(P.inCar!=null&&P.cars[P.inCar]){const v=ownedVeh[P.inCar]||spawnOwned(P.inCar,P.pos.x,P.pos.z,P.pos.h);v.pos.set(P.pos.x,0,P.pos.z);v.h=P.pos.h;enterVehicle(v);}else{player.mode='foot';player.pos.set(P.pos.x,0,P.pos.z);player.h=P.pos.h;avatar.visible=true;}}
+    else if(STORY||!P.cars.length){const z=startPick?startPick.zone:W.zones.find(q=>q.id==='mumbai');const sp=storyStart(z);player.mode='foot';player.pos.set(sp.x,0,sp.z);player.h=sp.h;avatar.visible=true;startPick=null;} // Beta v2.05.00: Badshah begins on foot at the city's railway station
     else{const sp=startPick?startSpot(startPick.zone):{x:2940,z:8736,h:Math.PI/2};const v=ownedVeh[0]||spawnOwned(0,sp.x,sp.z,sp.h);v.pos.set(sp.x,0,sp.z);v.h=sp.h;enterVehicle(v);startPick=null;}
     P.cars.forEach((c,i)=>{if(!ownedVeh[i]&&!c.garage){const [x,z,h]=[2900+i*7,8747,Math.PI/2];spawnOwned(i,x,z,h);}});
     if(startPick){const sp=startSpot(startPick.zone);const v=player.mode==='drive'?player.veh:null;teleport(sp.x,sp.z,sp.h);if(v){v.pos.set(sp.x,0,sp.z);v.h=sp.h;v.v=0;enterVehicle(v);}startPick=null;}
@@ -2453,12 +2491,13 @@ function begin(){setAvatar();document.body.classList.remove('pre');$('#intro').h
   toast(`${CFG.name} · ${areaName()}`,'#ffc93c');}
 {const v=$('#ver');if(v)v.textContent=VERSION;}
 $('#go').onclick=()=>{if(!P.name)return profileSheet(true,begin);begin();};
-// Beta v2.03.00: switch between the open world (online) and Badshah story mode. Each has its own save; the page reloads.
-{const b=$('#iMode');if(b){b.innerHTML=STORY?'<span>🌐</span>Open world · online':'<span>👑</span>Badshah · story mode';
-  b.onclick=()=>openSheet(STORY?'🌐 Open world':'👑 Badshah · story mode',STORY?'Back to the shared online world':'104 missions · from a broke new arrival to the ruler of India Bay',
-    (STORY?'<p class="note">Your story progress is kept. Open world play uses your normal save, with other players online.</p>':'<p class="note">Story mode is played alone: no other players, no chat, no flying car or heroes. It has its own save, so your open world progress is safe. Sign in (Google) to keep the story in the cloud and carry on from another device; it plays offline too, on a plane or with no signal, and saves to the cloud when you are back online. Story missions unlock day by day (up to 3 a day).</p>')+rowHtml('go',STORY?'Switch to the open world':'Play the story','The game reloads',STORY?'Open world':'Play story')+rowHtml('no','Stay here','','Cancel','ghost'),
-    s=>s.onclick=e=>{const id=e.target.dataset.id;if(id==='go')api.setMode(STORY?'world':'story');else if(id==='no')closeSheet();});}
-  if(STORY){const t=$('#gTag');if(t)t.textContent='👑 Badshah · story mode · offline';document.body.classList.add('storymode');}}
+// Beta v2.05.00: the two game modes sit at the top of the start menu. Each has its own save; switching reloads the page.
+{const box=$('#iModes');if(box){for(const b of box.querySelectorAll('[data-mode]'))b.classList.toggle('on',(b.dataset.mode==='story')===STORY);
+  box.onclick=e=>{const b=e.target.closest('[data-mode]');if(!b)return;const want=b.dataset.mode;if((want==='story')===STORY)return;
+    openSheet(want==='story'?'👑 Badshah':'🌐 Multiplayer',want==='story'?'A mission-based game mode':'The shared open world',
+      (want==='story'?'<p class="note">Play missions on your own, start to finish. Badshah has its own save and starting money, so your multiplayer progress is safe. Sign in to keep it in the cloud and carry on from another device. It plays offline too.</p>':'<p class="note">The open world with other players online: jobs, chat, events and everything else. Your Badshah progress is kept.</p>')+rowHtml('go',want==='story'?'Play Badshah':'Play Multiplayer','The game reloads','Switch')+rowHtml('no','Stay here','','Cancel','ghost'),
+      s=>s.onclick=ev=>{const id=ev.target.dataset.id;if(id==='go')api.setMode(want);else if(id==='no')closeSheet();});};}
+  if(STORY){const t=$('#gTag');if(t)t.textContent='👑 Badshah · mission mode';document.body.classList.add('storymode');}}
 
 /* ================= feature API ================= */
 // Fewer bot cars and people when real players are around (set by online play).
